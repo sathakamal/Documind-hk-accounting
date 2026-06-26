@@ -1,0 +1,314 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ─── ORGANIZATION & AUTH ───────────────────────────────────────
+
+model Organization {
+  id            String   @id @default(cuid())
+  name          String
+  legalName     String?
+  brNumber      String?
+  address       String?
+  baseCurrency  String   @default("HKD")
+  plan          String   @default("FREE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  users         User[]
+  documents     Document[]
+  vendors       Vendor[]
+  customers     Customer[]
+  bills         Bill[]
+  invoices      Invoice[]
+  currencies    OrgCurrency[]
+  exchangeRates ExchangeRate[]
+  accounts      Account[]
+  journalEntries JournalEntry[]
+  bankTransactions BankTransaction[]
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  password       String
+  name           String
+  role           String   @default("USER")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  documents      Document[] @relation("UserDocuments")
+}
+
+// ─── CURRENCIES ─────────────────────────────────────────────────
+
+model OrgCurrency {
+  id             String   @id @default(cuid())
+  code           String
+  name           String
+  symbol         String
+  isBase         Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, code])
+}
+
+model ExchangeRate {
+  id             String   @id @default(cuid())
+  fromCurrency   String
+  toCurrency     String
+  rate           Decimal
+  date           DateTime @default(now())
+  source         String   @default("MANUAL")
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, fromCurrency, toCurrency, date])
+}
+
+// ─── DOCUMENTS (AI PROCESSED) ───────────────────────────────────
+
+model Document {
+  id             String   @id @default(cuid())
+  filename       String
+  originalName   String
+  mimeType       String
+  fileSize       Int
+  storageUrl     String
+  status         String   @default("UPLOADED")
+  documentType   String?
+
+  // AI extraction results
+  extractedData  String?
+  rawText        String?
+  confidence     Float?
+  processingMs   Int?
+  aiModel        String?
+
+  // Links to accounting records
+  billId         String?
+  invoiceId      String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  uploadedById   String
+  uploadedBy     User @relation("UserDocuments", fields: [uploadedById], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ─── VENDORS (SUPPLIERS / AP) ───────────────────────────────────
+
+model Vendor {
+  id              String   @id @default(cuid())
+  code            String
+  name            String
+  email           String?
+  phone           String?
+  address         String?
+  country         String   @default("Hong Kong")
+  currency        String   @default("HKD")
+  paymentTerms    Int      @default(30)
+  bankDetails     String?
+  notes           String?
+  isActive        Boolean  @default(true)
+
+  totalBilled     Decimal  @default(0)
+  totalPaid       Decimal  @default(0)
+  balance         Decimal  @default(0)
+
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  bills           Bill[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([organizationId, code])
+}
+
+// ─── BILLS (ACCOUNTS PAYABLE) ───────────────────────────────────
+
+model Bill {
+  id               String   @id @default(cuid())
+  billNumber       String
+  vendorBillRef    String?
+  vendorId         String
+  vendor           Vendor @relation(fields: [vendorId], references: [id])
+
+  issueDate        DateTime
+  dueDate          DateTime
+  status           String  @default("DRAFT")
+
+  currency         String  @default("HKD")
+  exchangeRate     Decimal @default(1)
+  subtotal         Decimal
+  taxAmount        Decimal @default(0)
+  totalAmount      Decimal
+  paidAmount       Decimal @default(0)
+  balanceDue       Decimal
+
+  totalHkd         Decimal @default(0)
+
+  notes            String?
+  taxStatus        String  @default("ONSHORE") // ONSHORE, OFFSHORE (HK profit tax offshore claims)
+
+  lines            BillLine[]
+
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([organizationId, billNumber])
+}
+
+model BillLine {
+  id          String  @id @default(cuid())
+  billId      String
+  bill        Bill    @relation(fields: [billId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Decimal @default(1)
+  unitPrice   Decimal
+  amount      Decimal
+  taxRate     Decimal @default(0)
+  category    String?
+  sortOrder   Int     @default(0)
+}
+
+// ─── CUSTOMERS (AR) ─────────────────────────────────────────────
+
+model Customer {
+  id             String   @id @default(cuid())
+  code           String
+  name           String
+  email          String?
+  phone          String?
+  address        String?
+  country        String   @default("Hong Kong")
+  currency       String   @default("HKD")
+  paymentTerms   Int      @default(30)
+  creditLimit    Decimal  @default(0)
+  notes          String?
+  isActive       Boolean  @default(true)
+
+  totalInvoiced  Decimal  @default(0)
+  totalReceived  Decimal  @default(0)
+  balance        Decimal  @default(0)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  invoices       Invoice[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, code])
+}
+
+// ─── INVOICES (ACCOUNTS RECEIVABLE) ─────────────────────────────
+
+model Invoice {
+  id             String   @id @default(cuid())
+  invoiceNumber  String
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id])
+
+  issueDate      DateTime
+  dueDate        DateTime
+  status         String   @default("DRAFT")
+
+  currency         String  @default("HKD")
+  exchangeRate     Decimal @default(1)
+  subtotal         Decimal
+  taxAmount        Decimal @default(0)
+  totalAmount      Decimal
+  paidAmount       Decimal @default(0)
+  balanceDue       Decimal
+
+  totalHkd         Decimal @default(0)
+
+  notes            String?
+  taxStatus        String  @default("ONSHORE") // ONSHORE, OFFSHORE (HK profit tax offshore claims)
+
+  lines            InvoiceLine[]
+
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([organizationId, invoiceNumber])
+}
+
+model InvoiceLine {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Decimal @default(1)
+  unitPrice   Decimal
+  amount      Decimal
+  taxRate     Decimal @default(0)
+  category    String?
+  sortOrder   Int     @default(0)
+}
+
+// ─── DOUBLE-ENTRY ACCOUNTING ────────────────────────────────────
+
+model Account {
+  id             String        @id @default(cuid())
+  code           String
+  name           String
+  type           String        // ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE
+  classification String        // CURRENT_ASSET, FIXED_ASSET, CURRENT_LIABILITY, LONG_TERM_LIABILITY, EQUITY, REVENUE, OPERATING_EXPENSE, COST_OF_GOODS_SOLD
+  balance        Decimal       @default(0)
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  journalLines   JournalLine[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([organizationId, code])
+}
+
+model JournalEntry {
+  id             String        @id @default(cuid())
+  date           DateTime      @default(now())
+  description    String
+  reference      String?       // e.g. INV-2025-001, BILL-2025-002, BANK-REC
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  lines          JournalLine[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model JournalLine {
+  id             String       @id @default(cuid())
+  journalEntryId String
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  accountId      String
+  account        Account      @relation(fields: [accountId], references: [id])
+  debit          Decimal      @default(0)
+  credit         Decimal      @default(0)
+}
+
+model BankTransaction {
+  id             String   @id @default(cuid())
+  date           DateTime
+  description    String
+  amount         Decimal  // Positive for receipt, negative for payment
+  status         String   @default("UNRECONCILED") // UNRECONCILED, RECONCILED
+  reference      String?  // Reference matched (e.g. INV-2025-001)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
