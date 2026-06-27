@@ -1291,8 +1291,8 @@ function WorkspaceContent() {
                     pd: 0,
                     st: "Outstanding",
                   };
-                  saveState({ ...D, invoices: [newInv, ...D.invoices] });
-                  addLog("INV_ADD", `Created Invoice ${invNum} to ${invCust}`);
+                  const updatedState = { ...D, invoices: [newInv, ...D.invoices] };
+                  addLog("INV_ADD", `Created Invoice ${invNum} to ${invCust}`, "INFO", updatedState);
                   setInvNum("");
                   setInvCust("");
                   setInvAmt(0);
@@ -1446,8 +1446,8 @@ function WorkspaceContent() {
                     pd: 0,
                     st: "Unpaid",
                   };
-                  saveState({ ...D, bills: [newBill, ...D.bills] });
-                  addLog("BILL_ADD", `Registered Bill ${billNum} from ${billVend}`);
+                  const updatedState = { ...D, bills: [newBill, ...D.bills] };
+                  addLog("BILL_ADD", `Registered Bill ${billNum} from ${billVend}`, "INFO", updatedState);
                   setBillNum("");
                   setBillVend("");
                   setBillAmt(0);
@@ -1609,8 +1609,8 @@ function WorkspaceContent() {
                     res: assRes,
                     status: "Active",
                   };
-                  saveState({ ...D, assets: [newAsset, ...D.assets] });
-                  addLog("ASSET_ADD", `Registered Fixed Asset: ${assName} (Cost: HK$${assCost})`);
+                  const updatedState = { ...D, assets: [newAsset, ...D.assets] };
+                  addLog("ASSET_ADD", `Registered Fixed Asset: ${assName} (Cost: HK$${assCost})`, "INFO", updatedState);
                   setAssName("");
                   setAssCost(0);
                   setAssRes(0);
@@ -2835,7 +2835,7 @@ function WorkspaceContent() {
             <button
               className="hk-btn hk-btn-n"
               onClick={() => {
-                addLog("SET_SAVE", "Updated company information parameters");
+                addLog("SET_SAVE", "Updated company information parameters", "INFO", D);
                 alert("✅ Configuration saved successfully!");
               }}
             >

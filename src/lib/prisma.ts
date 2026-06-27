@@ -3,11 +3,12 @@ import { PrismaNeonHttp } from "@prisma/adapter-neon";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-async function createPrismaClient() {
+function createPrismaClient(): PrismaClient {
   const connectionString = process.env.DATABASE_URL!;
-  const factory = new PrismaNeonHttp(connectionString, { arrayMode: true, fullResults: true });
-  const adapter = (await factory.connect()) as any;
-  
+  // PrismaNeonHttp routes all DB queries over HTTPS (port 443).
+  // This bypasses firewall rules blocking direct TCP on port 5432.
+  const adapter = new PrismaNeonHttp(connectionString);
+
   return new PrismaClient({
     adapter,
     log:
@@ -17,8 +18,6 @@ async function createPrismaClient() {
   });
 }
 
-// Since createPrismaClient returns a Promise, we await it.
-// Next.js Server Components/API routes support top-level await.
-export const prisma = globalForPrisma.prisma || await createPrismaClient();
+export const prisma = globalForPrisma.prisma || createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
