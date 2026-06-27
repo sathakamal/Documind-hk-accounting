@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -85,12 +86,16 @@ model Document {
   status         String   @default("UPLOADED")
   documentType   String?
 
+  // Duplicate detection
+  fileHash       String?
+
   // AI extraction results
   extractedData  String?
   rawText        String?
   confidence     Float?
   processingMs   Int?
   aiModel        String?
+  processingError String?
 
   // Links to accounting records
   billId         String?

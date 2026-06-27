@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 
 export function Sidebar() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const currentTab = searchParams.get("tab") || "dash";
+
+  // Check if we're on a standalone route (not /dashboard)
+  const isDocuments = pathname === "/documents";
+  const isUpload = pathname === "/upload";
 
   const groups = [
     {
@@ -93,11 +98,34 @@ export function Sidebar() {
         <small>HKFRS · IRD · Cap.622 Compliant</small>
       </div>
 
+      {/* ── Document Hub section (standalone routes) ── */}
+      <div>
+        <div className="sb-grp">Document Hub</div>
+        <Link
+          href="/documents"
+          className={`sb-item ${isDocuments ? "active" : ""}`}
+          style={{ textDecoration: "none" }}
+        >
+          <span className="ico">📥</span>
+          Document Inbox
+          <span className="sb-badge" style={{ background: "#3b82f6" }}>HubDoc</span>
+        </Link>
+        <Link
+          href="/upload"
+          className={`sb-item ${isUpload ? "active" : ""}`}
+          style={{ textDecoration: "none" }}
+        >
+          <span className="ico">⬆</span>
+          Upload Documents
+        </Link>
+      </div>
+
+      {/* ── Tab-based sections ── */}
       {groups.map((grp) => (
         <div key={grp.name}>
           <div className="sb-grp">{grp.name}</div>
           {grp.items.map((item) => {
-            const isActive = currentTab === item.id;
+            const isActive = !isDocuments && !isUpload && currentTab === item.id;
             return (
               <Link
                 key={item.id}
