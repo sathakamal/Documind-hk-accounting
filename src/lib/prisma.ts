@@ -7,7 +7,7 @@ function createPrismaClient(): PrismaClient {
   const connectionString = process.env.DATABASE_URL!;
   // PrismaNeonHttp routes all DB queries over HTTPS (port 443).
   // This bypasses firewall rules blocking direct TCP on port 5432.
-  const adapter = new PrismaNeonHttp(connectionString);
+  const adapter = new PrismaNeonHttp(connectionString, { arrayMode: false, fullResults: true });
 
   return new PrismaClient({
     adapter,
