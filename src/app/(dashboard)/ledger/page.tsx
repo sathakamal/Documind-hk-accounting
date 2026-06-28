@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatMoney, formatDate } from "@/lib/utils";
-import { Plus, Trash2, Scale } from "lucide-react";
+import { Plus, Trash2, Scale, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 
 export default function LedgerPage() {
@@ -51,6 +51,25 @@ export default function LedgerPage() {
       toast.error("Failed to load ledger data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportLedger = async () => {
+    try {
+      toast.info("Preparing General Ledger export...");
+      const response = await fetch("/api/export/general-ledger");
+      if (!response.ok) throw new Error("Export failed");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "general-ledger.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast.success("General Ledger exported successfully!");
+    } catch (error) {
+      toast.error("Failed to export General Ledger");
     }
   };
 
@@ -132,13 +151,18 @@ export default function LedgerPage() {
         title="General Ledger"
         description="View individual journal transactions and general ledger logs"
         actions={
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                New Journal Entry
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={handleExportLedger}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Export General Ledger
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Journal Entry
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">

@@ -41,9 +41,42 @@ export default function ReportsPage() {
     fetchFinancials();
   }, [taxStatus]);
 
-  const handleExport = () => {
-    toast.info("Preparing Excel export of audit pack...");
-    // Simulate export or redirect to Excel API
+  const handleExportTrialBalance = async () => {
+    try {
+      toast.info("Preparing Trial Balance export...");
+      const response = await fetch("/api/export/trial-balance");
+      if (!response.ok) throw new Error("Export failed");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "trial-balance.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast.success("Trial Balance exported successfully!");
+    } catch (error) {
+      toast.error("Failed to export Trial Balance");
+    }
+  };
+
+  const handleExportFinancials = async () => {
+    try {
+      toast.info("Preparing Financial Statements export...");
+      const response = await fetch("/api/export/financial-statements");
+      if (!response.ok) throw new Error("Export failed");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "financial-statements.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast.success("Financial Statements exported successfully!");
+    } catch (error) {
+      toast.error("Failed to export Financial Statements");
+    }
   };
 
   if (loading || !data) {
@@ -74,9 +107,13 @@ export default function ReportsPage() {
                 <SelectItem value="OFFSHORE">HK Offshore (Exempt)</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={handleExport}>
+            <Button variant="outline" onClick={handleExportTrialBalance}>
               <FileSpreadsheet className="w-4 h-4 mr-2" />
-              Export Audit Pack
+              Export Trial Balance
+            </Button>
+            <Button variant="outline" onClick={handleExportFinancials}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Export Financial Statements
             </Button>
           </div>
         }

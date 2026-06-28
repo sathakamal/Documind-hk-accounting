@@ -16,6 +16,8 @@ model Organization {
   address       String?
   baseCurrency  String   @default("HKD")
   plan          String   @default("FREE")
+  financialYearStartMonth Int @default(4)
+  financialYearStartDay   Int @default(1)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -30,6 +32,8 @@ model Organization {
   accounts      Account[]
   journalEntries JournalEntry[]
   bankTransactions BankTransaction[]
+  employees     Employee[]
+  payrollRuns   PayrollRun[]
 }
 
 model User {
@@ -288,6 +292,7 @@ model JournalEntry {
   organizationId String
   organization   Organization  @relation(fields: [organizationId], references: [id])
   lines          JournalLine[]
+  payrollRun     PayrollRun?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 }
@@ -311,6 +316,77 @@ model BankTransaction {
   reference      String?  // Reference matched (e.g. INV-2025-001)
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ─── PAYROLL & EMPLOYEES ─────────────────────────────────────────
+
+model Employee {
+  id             String   @id @default(cuid())
+  code           String
+  name           String
+  hkid           String?
+  position       String?
+  department     String?
+  startDate      DateTime
+  basicSalary    Decimal
+  housingAllowance Decimal @default(0)
+  mpfExempt      Boolean  @default(false)
+  status         String   @default("ACTIVE") // ACTIVE, INACTIVE, TERMINATED
+  notes          String?
+  
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  payrollLines   PayrollLine[]
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@unique([organizationId, code])
+}
+
+model PayrollRun {
+  id             String   @id @default(cuid())
+  runNumber      String
+  periodStart    DateTime
+  periodEnd      DateTime
+  paymentDate    DateTime
+  status         String   @default("DRAFT") // DRAFT, APPROVED, PAID
+  totalGrossPay  Decimal  @default(0)
+  totalEmployeeMpf Decimal @default(0)
+  totalEmployerMpf Decimal @default(0)
+  totalNetPay    Decimal  @default(0)
+  totalCost      Decimal  @default(0)
+  notes          String?
+  
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  lines          PayrollLine[]
+  journalEntryId String? @unique
+  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id])
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@unique([organizationId, runNumber])
+}
+
+model PayrollLine {
+  id             String   @id @default(cuid())
+  payrollRunId   String
+  payrollRun     PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  employeeId     String
+  employee       Employee @relation(fields: [employeeId], references: [id])
+  basicSalary    Decimal
+  housingAllowance Decimal
+  grossPay       Decimal
+  employeeMpf    Decimal
+  netPay         Decimal
+  employerMpf    Decimal
+  totalCost      Decimal
+  notes          String?
+  
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

@@ -13,6 +13,8 @@ export const initialAccounts = [
   // --- LIABILITIES ---
   { code: "2000", name: "Accounts Payable", type: "LIABILITY", classification: "CURRENT_LIABILITY" },
   { code: "2200", name: "Salaries Payable", type: "LIABILITY", classification: "CURRENT_LIABILITY" },
+  { code: "2210", name: "MPF Payable", type: "LIABILITY", classification: "CURRENT_LIABILITY" },
+  { code: "2300", name: "Hong Kong Profits Tax Payable", type: "LIABILITY", classification: "CURRENT_LIABILITY" },
   { code: "2400", name: "Directors' Loan", type: "LIABILITY", classification: "LONG_TERM_LIABILITY" },
 
   // --- EQUITY ---
@@ -33,6 +35,7 @@ export const initialAccounts = [
   { code: "6050", name: "Travel & Entertainment", type: "EXPENSE", classification: "OPERATING_EXPENSE" },
   { code: "6060", name: "Office Expenses", type: "EXPENSE", classification: "OPERATING_EXPENSE" },
   { code: "6070", name: "Foreign Exchange Variance", type: "EXPENSE", classification: "OPERATING_EXPENSE" },
+  { code: "6800", name: "Hong Kong Profits Tax Expense", type: "EXPENSE", classification: "OPERATING_EXPENSE" },
   { code: "6900", name: "Depreciation Expense", type: "EXPENSE", classification: "OPERATING_EXPENSE" },
 ];
 
