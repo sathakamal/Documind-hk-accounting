@@ -9,11 +9,9 @@ export function Sidebar() {
   const currentTab = searchParams.get("tab") || "dash";
 
   // Check if we're on a standalone route (not /dashboard)
+  const isStandalonePage = pathname !== "/dashboard" && pathname !== "/";
   const isDocuments = pathname === "/documents";
   const isUpload = pathname === "/upload";
-  const isEmployees = pathname === "/employees";
-  const isPayroll = pathname === "/payroll";
-  const isPayrollHistory = pathname === "/payroll-history";
 
   const groups = [
     {
@@ -81,7 +79,7 @@ export function Sidebar() {
         { id: "compliance", label: "Compliance Center", ico: "✅", badge: "NEW" },
         { id: "audit", label: "Audit Trail", ico: "🔍" },
         { id: "deadlines", label: "HK Deadlines", ico: "📅" },
-        { id: "settings", label: "Settings", ico: "⚙" },
+        { id: "settings", label: "Settings", ico: "⚙", href: "/settings" },
       ],
     },
   ];
@@ -127,11 +125,11 @@ export function Sidebar() {
         <div key={grp.name}>
           <div className="sb-grp">{grp.name}</div>
           {grp.items.map((item) => {
-            const isStandalone = 'href' in item;
+            const isStandalone = 'href' in item && typeof item.href === 'string';
             const isActive = isStandalone
               ? pathname === item.href
-              : !isDocuments && !isUpload && currentTab === item.id;
-            const href = isStandalone ? item.href : `/dashboard?tab=${item.id}`;
+              : !isStandalonePage && currentTab === item.id;
+            const href = isStandalone ? (item.href as string) : `/dashboard?tab=${item.id}`;
             
             return (
               <Link

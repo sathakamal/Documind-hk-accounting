@@ -88,30 +88,26 @@ export async function POST(req: Request) {
       };
     });
 
-    // Create payroll run in transaction
-    const result = await prisma.$transaction(async (tx) => {
-      const payrollRun = await tx.payrollRun.create({
-        data: {
-          runNumber,
-          periodStart: new Date(periodStart),
-          periodEnd: new Date(periodEnd),
-          paymentDate: new Date(paymentDate),
-          status: "DRAFT",
-          totalGrossPay,
-          totalEmployeeMpf,
-          totalEmployerMpf,
-          totalNetPay,
-          totalCost,
-          notes,
-          organizationId: orgId,
-          lines: {
-            create: payrollLines,
-          },
+    // Create payroll run with nested writes (atomic by default in Prisma)
+    const result = await prisma.payrollRun.create({
+      data: {
+        runNumber,
+        periodStart: new Date(periodStart),
+        periodEnd: new Date(periodEnd),
+        paymentDate: new Date(paymentDate),
+        status: "DRAFT",
+        totalGrossPay,
+        totalEmployeeMpf,
+        totalEmployerMpf,
+        totalNetPay,
+        totalCost,
+        notes,
+        organizationId: orgId,
+        lines: {
+          create: payrollLines,
         },
-        include: { lines: { include: { employee: true } } },
-      });
-
-      return payrollRun;
+      },
+      include: { lines: { include: { employee: true } } },
     });
 
     return NextResponse.json({ success: true, data: result });
