@@ -142,7 +142,7 @@ export function Sidebar() {
               >
                 <span className="ico">{item.ico}</span>
                 {item.label}
-                {item.badge && <span className="sb-badge">{item.badge}</span>}
+                {'badge' in item && item.badge && <span className="sb-badge">{item.badge}</span>}
               </Link>
             );
           })}

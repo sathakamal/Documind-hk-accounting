@@ -28,6 +28,7 @@ interface Employee {
   basicSalary: number;
   housingAllowance: number;
   mpfExempt: boolean;
+  status: string;
 }
 
 interface PayrollLine {
