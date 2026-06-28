@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
-interface Organization {
+interface OrganizationData {
+  id: string;
   name: string;
   legalName: string | null;
   brNumber: string | null;
@@ -20,8 +21,8 @@ interface Organization {
 }
 
 export default function SettingsPage() {
-  const [org, setOrg] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     legalName: "",
@@ -47,12 +48,56 @@ export default function SettingsPage() {
     { value: "12", label: "December" },
   ];
 
-  const handleSave = async () => {
+  const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
+
+  const fetchOrganization = async () => {
     try {
-      // TODO: Implement API call to update organization
-      toast.success("Settings saved successfully");
-    } catch (err) {
+      const res = await fetch("/api/organization");
+      const data = await res.json();
+      if (data.success) {
+        setFormData({
+          name: data.data.name,
+          legalName: data.data.legalName || "",
+          brNumber: data.data.brNumber || "",
+          address: data.data.address || "",
+          baseCurrency: data.data.baseCurrency,
+          financialYearStartMonth: data.data.financialYearStartMonth.toString(),
+          financialYearStartDay: data.data.financialYearStartDay.toString(),
+        });
+      }
+    } catch (error) {
+      toast.error("Failed to load organization settings");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrganization();
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/organization", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          financialYearStartMonth: parseInt(formData.financialYearStartMonth),
+          financialYearStartDay: parseInt(formData.financialYearStartDay),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Settings saved successfully!");
+      } else {
+        toast.error(data.error || "Failed to save settings");
+      }
+    } catch (error) {
       toast.error("Failed to save settings");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -75,41 +120,41 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="org-name">Organization Name</Label>
+              <Label htmlFor="name">Organization Name</Label>
               <Input
-                id="org-name"
+                id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
             </div>
             <div>
-              <Label htmlFor="org-legal">Legal Name</Label>
+              <Label htmlFor="legalName">Legal Name</Label>
               <Input
-                id="org-legal"
+                id="legalName"
                 value={formData.legalName}
                 onChange={(e) => setFormData({ ...formData, legalName: e.target.value })}
               />
             </div>
             <div>
-              <Label htmlFor="br-number">Business Registration Number</Label>
+              <Label htmlFor="brNumber">Business Registration Number (BRN)</Label>
               <Input
-                id="br-number"
+                id="brNumber"
                 value={formData.brNumber}
                 onChange={(e) => setFormData({ ...formData, brNumber: e.target.value })}
               />
             </div>
             <div>
-              <Label htmlFor="org-address">Address</Label>
+              <Label htmlFor="address">Address</Label>
               <Input
-                id="org-address"
+                id="address"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               />
             </div>
             <div>
-              <Label htmlFor="org-currency">Base Currency</Label>
+              <Label htmlFor="baseCurrency">Base Currency</Label>
               <Input
-                id="org-currency"
+                id="baseCurrency"
                 value={formData.baseCurrency}
                 onChange={(e) => setFormData({ ...formData, baseCurrency: e.target.value })}
               />
@@ -123,15 +168,15 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="fy-month">Financial Year Starts</Label>
+              <Label htmlFor="financialYearStartMonth">Financial Year Starts</Label>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Select
                     value={formData.financialYearStartMonth}
-                    onValueChange={(val) => setFormData({ ...formData, financialYearStartMonth: val })}
+                    onValueChange={(value) => setFormData({ ...formData, financialYearStartMonth: value })}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
+                    <SelectTrigger id="financialYearStartMonth">
+                      <SelectValue placeholder="Select month" />
                     </SelectTrigger>
                     <SelectContent>
                       {months.map((m) => (
@@ -143,13 +188,13 @@ export default function SettingsPage() {
                 <div>
                   <Select
                     value={formData.financialYearStartDay}
-                    onValueChange={(val) => setFormData({ ...formData, financialYearStartDay: val })}
+                    onValueChange={(value) => setFormData({ ...formData, financialYearStartDay: value })}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
+                    <SelectTrigger id="financialYearStartDay">
+                      <SelectValue placeholder="Select day" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from({ length: 31 }, (_, i) => (i + 1).toString()).map((d) => (
+                      {days.map((d) => (
                         <SelectItem key={d} value={d}>{d}</SelectItem>
                       ))}
                     </SelectContent>
@@ -164,7 +209,9 @@ export default function SettingsPage() {
         </Card>
 
         <div className="lg:col-span-2 flex justify-end">
-          <Button onClick={handleSave}>Save Changes</Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
         </div>
       </div>
     </div>

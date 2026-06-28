@@ -108,7 +108,7 @@ export function Sidebar() {
           className={`sb-item ${isDocuments ? "active" : ""}`}
           style={{ textDecoration: "none" }}
         >
-          <span className="ico">📥</span>
+          <span className="ico" style={{ marginRight: "0.5rem" }}>📥</span>
           Document Inbox
           <span className="sb-badge" style={{ background: "#3b82f6" }}>HubDoc</span>
         </Link>
@@ -117,7 +117,7 @@ export function Sidebar() {
           className={`sb-item ${isUpload ? "active" : ""}`}
           style={{ textDecoration: "none" }}
         >
-          <span className="ico">⬆</span>
+          <span className="ico" style={{ marginRight: "0.5rem" }}>⬆</span>
           Upload Documents
         </Link>
       </div>
@@ -140,7 +140,7 @@ export function Sidebar() {
                 className={`sb-item ${isActive ? "active" : ""}`}
                 style={{ textDecoration: "none" }}
               >
-                <span className="ico">{item.ico}</span>
+                <span className="ico" style={{ marginRight: "0.5rem" }}>{item.ico}</span>
                 {item.label}
                 {'badge' in item && item.badge && <span className="sb-badge">{item.badge}</span>}
               </Link>
