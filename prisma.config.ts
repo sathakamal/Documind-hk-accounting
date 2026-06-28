@@ -2,7 +2,6 @@ import { defineConfig } from "prisma/config";
 import { PrismaNeonHttp } from "@prisma/adapter-neon";
 
 export default defineConfig({
-  earlyAccess: true,
   schema: "./prisma/schema.prisma",
   migrate: {
     async adapter(env) {
