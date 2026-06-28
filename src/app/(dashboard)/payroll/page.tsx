@@ -307,14 +307,14 @@ export default function PayrollPage() {
 
       <div className="space-y-6">
         {payrollRuns.length === 0 ? (
-          <Card className="bg-[#1e2130] border-border">
+          <Card>
             <CardContent className="text-center py-12 text-muted-foreground">
               No payroll runs yet. Click "New Payroll Run" to get started.
             </CardContent>
           </Card>
         ) : (
           payrollRuns.map((payroll) => (
-            <Card key={payroll.id} className="bg-[#1e2130] border-border">
+            <Card key={payroll.id}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div>
                   <CardTitle>{payroll.runNumber}</CardTitle>
@@ -340,49 +340,49 @@ export default function PayrollPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                  <div className="bg-secondary/30 rounded-lg p-3">
+                  <div className="bg-secondary rounded-lg p-3">
                     <p className="text-sm text-muted-foreground">Gross Pay</p>
-                    <p className="text-lg font-mono font-bold text-foreground">{formatMoney(payroll.totalGrossPay, "HKD")}</p>
+                    <p className="text-lg font-mono font-bold">{formatMoney(payroll.totalGrossPay, "HKD")}</p>
                   </div>
-                  <div className="bg-secondary/30 rounded-lg p-3">
+                  <div className="bg-secondary rounded-lg p-3">
                     <p className="text-sm text-muted-foreground">Employee MPF</p>
                     <p className="text-lg font-mono font-bold text-destructive">{formatMoney(payroll.totalEmployeeMpf, "HKD")}</p>
                   </div>
-                  <div className="bg-secondary/30 rounded-lg p-3">
+                  <div className="bg-secondary rounded-lg p-3">
                     <p className="text-sm text-muted-foreground">Employer MPF</p>
                     <p className="text-lg font-mono font-bold text-orange-500">{formatMoney(payroll.totalEmployerMpf, "HKD")}</p>
                   </div>
-                  <div className="bg-secondary/30 rounded-lg p-3">
+                  <div className="bg-secondary rounded-lg p-3">
                     <p className="text-sm text-muted-foreground">Net Pay</p>
                     <p className="text-lg font-mono font-bold text-emerald-500">{formatMoney(payroll.totalNetPay, "HKD")}</p>
                   </div>
-                  <div className="bg-secondary/30 rounded-lg p-3">
+                  <div className="bg-secondary rounded-lg p-3">
                     <p className="text-sm text-muted-foreground">Total Cost</p>
                     <p className="text-lg font-mono font-bold text-primary">{formatMoney(payroll.totalCost, "HKD")}</p>
                   </div>
                 </div>
 
-                <div className="border border-border rounded-lg overflow-hidden">
+                <div className="border rounded-lg overflow-hidden">
                   <Table>
-                    <TableHeader className="bg-secondary/30">
-                      <TableRow className="border-border">
-                        <TableHead className="text-muted-foreground">Employee</TableHead>
-                        <TableHead className="text-muted-foreground text-right">Basic</TableHead>
-                        <TableHead className="text-muted-foreground text-right">Housing</TableHead>
-                        <TableHead className="text-muted-foreground text-right">Gross</TableHead>
-                        <TableHead className="text-muted-foreground text-right">EE MPF</TableHead>
-                        <TableHead className="text-muted-foreground text-right">Net</TableHead>
-                        <TableHead className="text-muted-foreground text-right">ER MPF</TableHead>
-                        <TableHead className="text-muted-foreground text-right">Total</TableHead>
+                    <TableHeader className="bg-secondary">
+                      <TableRow>
+                        <TableHead>Employee</TableHead>
+                        <TableHead className="text-right">Basic</TableHead>
+                        <TableHead className="text-right">Housing</TableHead>
+                        <TableHead className="text-right">Gross</TableHead>
+                        <TableHead className="text-right">EE MPF</TableHead>
+                        <TableHead className="text-right">Net</TableHead>
+                        <TableHead className="text-right">ER MPF</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {payroll.lines.map((line) => (
-                        <TableRow key={line.id} className="border-border">
-                          <TableCell className="font-medium text-foreground">{line.employee.name}</TableCell>
-                          <TableCell className="text-right font-mono text-foreground">{formatMoney(line.basicSalary, "HKD")}</TableCell>
-                          <TableCell className="text-right font-mono text-foreground">{formatMoney(line.housingAllowance, "HKD")}</TableCell>
-                          <TableCell className="text-right font-mono font-bold text-foreground">{formatMoney(line.grossPay, "HKD")}</TableCell>
+                        <TableRow key={line.id}>
+                          <TableCell className="font-medium">{line.employee.name}</TableCell>
+                          <TableCell className="text-right font-mono">{formatMoney(line.basicSalary, "HKD")}</TableCell>
+                          <TableCell className="text-right font-mono">{formatMoney(line.housingAllowance, "HKD")}</TableCell>
+                          <TableCell className="text-right font-mono font-bold">{formatMoney(line.grossPay, "HKD")}</TableCell>
                           <TableCell className="text-right font-mono text-destructive">{formatMoney(line.employeeMpf, "HKD")}</TableCell>
                           <TableCell className="text-right font-mono font-bold text-emerald-500">{formatMoney(line.netPay, "HKD")}</TableCell>
                           <TableCell className="text-right font-mono text-orange-500">{formatMoney(line.employerMpf, "HKD")}</TableCell>

@@ -121,13 +121,35 @@ export default function EmployeesPage() {
         title="Employees"
         description="Manage your employee records"
         actions={
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Employee
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (confirm("Are you sure you want to seed demo employees?")) {
+                  try {
+                    const res = await fetch("/api/seed-payroll", { method: "POST" });
+                    const data = await res.json();
+                    if (data.success) {
+                      toast.success(data.message);
+                      fetchEmployees();
+                    } else {
+                      toast.error(data.error);
+                    }
+                  } catch (err) {
+                    toast.error("Failed to seed data");
+                  }
+                }
+              }}
+            >
+              Seed Demo Data
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Employee
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Add New Employee</DialogTitle>
@@ -240,10 +262,11 @@ export default function EmployeesPage() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         }
       />
 
-      <Card className="bg-[#1e2130] border-border">
+      <Card>
         <CardHeader>
           <CardTitle>Employee List</CardTitle>
         </CardHeader>
@@ -255,24 +278,24 @@ export default function EmployeesPage() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="border-border">
-                  <TableHead className="text-muted-foreground">Code</TableHead>
-                  <TableHead className="text-muted-foreground">Name</TableHead>
-                  <TableHead className="text-muted-foreground">Position</TableHead>
-                  <TableHead className="text-muted-foreground">Department</TableHead>
-                  <TableHead className="text-muted-foreground text-right">Basic Salary</TableHead>
-                  <TableHead className="text-muted-foreground">MPF</TableHead>
-                  <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableRow>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Position</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead className="text-right">Basic Salary</TableHead>
+                  <TableHead>MPF</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {employees.map((emp) => (
-                  <TableRow key={emp.id} className="border-border">
+                  <TableRow key={emp.id}>
                     <TableCell className="font-mono text-primary">{emp.code}</TableCell>
-                    <TableCell className="font-medium text-foreground">{emp.name}</TableCell>
+                    <TableCell className="font-medium">{emp.name}</TableCell>
                     <TableCell className="text-muted-foreground">{emp.position || "-"}</TableCell>
                     <TableCell className="text-muted-foreground">{emp.department || "-"}</TableCell>
-                    <TableCell className="text-right font-mono text-foreground">{formatMoney(emp.basicSalary, "HKD")}</TableCell>
+                    <TableCell className="text-right font-mono">{formatMoney(emp.basicSalary, "HKD")}</TableCell>
                     <TableCell>
                       <span className={`${emp.mpfExempt ? "text-muted-foreground" : "text-emerald-500"}`}>
                         {emp.mpfExempt ? "Exempt" : "Required"}

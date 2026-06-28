@@ -114,7 +114,7 @@ export default function SettingsPage() {
     <div>
       <PageHeader title="Settings" description="Manage your account and preferences" />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <Card className="bg-[#1e2130] border-border">
+        <Card>
           <CardHeader>
             <CardTitle>Organization Details</CardTitle>
           </CardHeader>
@@ -162,7 +162,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#1e2130] border-border">
+        <Card>
           <CardHeader>
             <CardTitle>Financial Year</CardTitle>
           </CardHeader>
