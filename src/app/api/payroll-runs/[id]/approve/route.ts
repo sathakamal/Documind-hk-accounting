@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createJournalEntry } from "@/lib/journal";
 import { Decimal } from "decimal.js";
+import { initialAccounts } from "@/lib/initialAccounts";
 
 export async function POST(
   req: Request,
@@ -32,25 +33,36 @@ export async function POST(
       throw new Error("Payroll run is not in DRAFT status");
     }
 
+    // Helper to get or create account
+    const getOrCreateAccount = async (code: string) => {
+      let acc = await prisma.account.findFirst({
+        where: { organizationId: orgId, code },
+      });
+      
+      if (!acc) {
+        const initial = initialAccounts.find(a => a.code === code);
+        if (initial) {
+          acc = await prisma.account.create({
+            data: {
+              ...initial,
+              balance: 0,
+              organizationId: orgId,
+            },
+          });
+        }
+      }
+      return acc;
+    };
+
     // Get the necessary accounts
-    const salariesExpense = await prisma.account.findFirst({
-      where: { organizationId: orgId, code: "6010" },
-    });
-    const mpfExpense = await prisma.account.findFirst({
-      where: { organizationId: orgId, code: "6020" },
-    });
-    const mpfPayable = await prisma.account.findFirst({
-      where: { organizationId: orgId, code: "2210" },
-    });
-    const cashAccount = await prisma.account.findFirst({
-      where: { organizationId: orgId, code: "1010" },
-    });
-    const salariesPayable = await prisma.account.findFirst({
-      where: { organizationId: orgId, code: "2200" },
-    });
+    const salariesExpense = await getOrCreateAccount("6010");
+    const mpfExpense = await getOrCreateAccount("6020");
+    const mpfPayable = await getOrCreateAccount("2210");
+    const cashAccount = await getOrCreateAccount("1010");
+    const salariesPayable = await getOrCreateAccount("2200");
 
     if (!salariesExpense || !mpfExpense || !mpfPayable || !cashAccount || !salariesPayable) {
-      throw new Error("Required accounts not found. Please set up your chart of accounts.");
+      throw new Error("Required accounts not found and could not be auto-created. Please set up your chart of accounts.");
     }
 
     // Create journal entry lines

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { initialAccounts } from "@/lib/initialAccounts";
 
 export async function POST() {
   try {
@@ -12,7 +13,28 @@ export async function POST() {
 
     const orgId = session.user.organizationId;
 
-    // Demo employees to seed
+    // 1. Seed necessary accounts first (required for payroll approval)
+    // We use individual calls without upsert/transaction to avoid HTTP transaction limits
+    for (const acc of initialAccounts) {
+      const existingAcc = await prisma.account.findFirst({
+        where: {
+          organizationId: orgId,
+          code: acc.code,
+        },
+      });
+
+      if (!existingAcc) {
+        await prisma.account.create({
+          data: {
+            ...acc,
+            balance: 0,
+            organizationId: orgId,
+          },
+        });
+      }
+    }
+
+    // 2. Demo employees to seed
     const employees = [
       {
         code: "EMP-0001",
@@ -76,25 +98,42 @@ export async function POST() {
       },
     ];
 
-    // Insert employees
-    const employeesToCreate = [];
+    // 3. Insert employees one by one without upsert to avoid HTTP transaction limits
     for (const emp of employees) {
-      employeesToCreate.push({
-        ...emp,
-        organizationId: orgId,
+      const existingEmp = await prisma.employee.findFirst({
+        where: {
+          organizationId: orgId,
+          code: emp.code,
+        },
       });
+
+      if (!existingEmp) {
+        await prisma.employee.create({
+          data: {
+            ...emp,
+            organizationId: orgId,
+          },
+        });
+      } else {
+        await prisma.employee.update({
+          where: { id: existingEmp.id },
+          data: {
+            name: emp.name,
+            position: emp.position,
+            department: emp.department,
+            basicSalary: emp.basicSalary,
+            housingAllowance: emp.housingAllowance,
+            mpfExempt: emp.mpfExempt,
+            status: emp.status,
+          },
+        });
+      }
     }
 
-    if (employeesToCreate.length > 0) {
-      await prisma.employee.createMany({
-        data: employeesToCreate,
-        skipDuplicates: true,
-      });
-    }
-
-    return NextResponse.json({ success: true, message: "Payroll data seeded successfully!" });
+    return NextResponse.json({ success: true, message: "Payroll data and required accounts seeded successfully!" });
   } catch (error: any) {
     console.error("Payroll seed error:", error);
     return NextResponse.json({ success: false, error: error.message || "Failed to seed payroll data" }, { status: 500 });
   }
 }
+
