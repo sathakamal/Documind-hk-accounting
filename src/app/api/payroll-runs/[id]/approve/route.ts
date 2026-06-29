@@ -37,6 +37,7 @@ export async function POST(
     const getOrCreateAccount = async (code: string) => {
       let acc = await prisma.account.findFirst({
         where: { organizationId: orgId, code },
+        select: { id: true, balance: true, type: true, code: true }
       });
       
       if (!acc) {
@@ -48,6 +49,7 @@ export async function POST(
               balance: 0,
               organizationId: orgId,
             },
+            select: { id: true, balance: true, type: true, code: true }
           });
         }
       }
@@ -98,17 +100,29 @@ export async function POST(
       lines: journalLines,
     });
 
-    // Update payroll run status
-    const updatedPayrollRun = await prisma.payrollRun.update({
+    // Update payroll run status WITHOUT include to avoid implicit transactions
+    await prisma.payrollRun.update({
       where: { id, organizationId: orgId },
       data: {
         status: "APPROVED",
         journalEntryId: journalEntry.id,
       },
-      include: { lines: { include: { employee: true } } },
+      select: { id: true }
     });
 
-    return NextResponse.json({ success: true, data: updatedPayrollRun });
+    // Fetch the updated payroll run with all relations in a separate read operation
+    const result = await prisma.payrollRun.findUnique({
+      where: { id, organizationId: orgId },
+      include: { 
+        lines: { 
+          include: { 
+            employee: true 
+          } 
+        } 
+      },
+    });
+
+    return NextResponse.json({ success: true, data: result });
   } catch (error: any) {
     console.error("Payroll approve error:", error);
     return NextResponse.json({ success: false, error: error.message || "Failed to approve payroll" }, { status: 500 });
