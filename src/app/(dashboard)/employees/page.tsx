@@ -69,6 +69,56 @@ export default function EmployeesPage() {
     fetchEmployees();
   }, []);
 
+  const handleSeed = async () => {
+    try {
+      toast.info("Seeding demo payroll data...");
+      const res = await fetch("/api/seed-payroll", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+        
+        // Sync to HKFRS LocalStorage Dashboard State
+        const saved = localStorage.getItem("hkpro3_next");
+        if (saved && data.data?.employees) {
+          try {
+            const D = JSON.parse(saved);
+            const seeded = data.data.employees;
+            
+            // Map DB employees to Dashboard schema
+            const newEmployees = seeded.map((emp: any) => ({
+              id: emp.id,
+              name: emp.name,
+              hkid: emp.hkid || "N/A",
+              pos: emp.position,
+              dept: emp.department,
+              start: emp.startDate.split('T')[0],
+              sal: parseFloat(emp.basicSalary),
+              housing: parseFloat(emp.housingAllowance || 0),
+              mpfEx: emp.mpfExempt ? "yes" : "no",
+              st: emp.status
+            }));
+
+            // Replace or merge? Let's merge and avoid duplicates by name
+            const existingNames = new Set(D.employees.map((e: any) => e.name));
+            const toAdd = newEmployees.filter((e: any) => !existingNames.has(e.name));
+            
+            D.employees = [...toAdd, ...D.employees];
+            localStorage.setItem("hkpro3_next", JSON.stringify(D));
+            toast.info("Dashboard employee records updated");
+          } catch (e) {
+            console.error("Sync to local storage failed", e);
+          }
+        }
+        
+        fetchEmployees();
+      } else {
+        toast.error(data.error);
+      }
+    } catch (err) {
+      toast.error("Failed to seed data");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -124,20 +174,9 @@ export default function EmployeesPage() {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={async () => {
+              onClick={() => {
                 if (confirm("Are you sure you want to seed demo employees?")) {
-                  try {
-                    const res = await fetch("/api/seed-payroll", { method: "POST" });
-                    const data = await res.json();
-                    if (data.success) {
-                      toast.success(data.message);
-                      fetchEmployees();
-                    } else {
-                      toast.error(data.error);
-                    }
-                  } catch (err) {
-                    toast.error("Failed to seed data");
-                  }
+                  handleSeed();
                 }
               }}
             >

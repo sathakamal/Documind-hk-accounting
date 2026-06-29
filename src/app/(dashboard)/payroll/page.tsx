@@ -154,6 +154,39 @@ export default function PayrollPage() {
       const data = await res.json();
       if (data.success) {
         toast.success("Payroll approved and journal entries created");
+        
+        // Sync to HKFRS LocalStorage Dashboard State
+        const saved = localStorage.getItem("hkpro3_next");
+        if (saved && data.data.journalEntry) {
+          try {
+            const D = JSON.parse(saved);
+            const je = data.data.journalEntry;
+            
+            const newJE = {
+              id: je.id,
+              dt: je.date.split('T')[0],
+              ref: je.reference || `PR-${je.id.substring(0,4)}`,
+              desc: je.description,
+              type: "Standard",
+              cur: "HKD",
+              rate: 1,
+              lines: je.lines.map((l: any) => ({
+                a: l.account.code,
+                ld: `Payroll ${data.data.runNumber}`,
+                dr: parseFloat(l.debit),
+                cr: parseFloat(l.credit)
+              })),
+              ts: new Date().toISOString()
+            };
+
+            D.journals = [newJE, ...D.journals];
+            localStorage.setItem("hkpro3_next", JSON.stringify(D));
+            toast.info("Dashboard reports updated with payroll data");
+          } catch (e) {
+            console.error("Sync to local storage failed", e);
+          }
+        }
+        
         fetchData();
       } else {
         toast.error(data.error);

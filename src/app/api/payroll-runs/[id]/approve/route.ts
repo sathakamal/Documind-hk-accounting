@@ -118,7 +118,16 @@ export async function POST(
           include: { 
             employee: true 
           } 
-        } 
+        },
+        journalEntry: {
+          include: {
+            lines: {
+              include: {
+                account: true
+              }
+            }
+          }
+        }
       },
     });
 

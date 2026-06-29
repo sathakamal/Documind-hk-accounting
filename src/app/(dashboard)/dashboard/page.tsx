@@ -384,13 +384,19 @@ function WorkspaceContent() {
 
   // Load Demo Data Function
   const loadDemo = () => {
+    const now = new Date();
+    const curY = now.getFullYear();
+    const curM = String(now.getMonth() + 1).padStart(2, '0');
+    const lastM = String(now.getMonth()).padStart(2, '0') || '12';
+    const lastY = now.getMonth() === 0 ? curY - 1 : curY;
+
     const demo: HKProState = {
       settings: { name: "TST Gems & Jewellery Ltd", brn: "61234567", cr: "10987654", fw: "pe", cur: "HKD", addr: "Nathan Road, TST, Kowloon", aud: "Raymond Lee & Partners CPA" },
       accounts: [...defCOA],
       journals: [
         {
           id: 1,
-          dt: "2025-01-01",
+          dt: `${curY}-01-01`,
           ref: "CAP-001",
           desc: "Share capital injection",
           type: "Opening Balance",
@@ -404,7 +410,7 @@ function WorkspaceContent() {
         },
         {
           id: 2,
-          dt: "2025-01-15",
+          dt: `${curY}-${lastM}-15`,
           ref: "JE-0002",
           desc: "Office rent payment",
           type: "Standard",
@@ -418,7 +424,7 @@ function WorkspaceContent() {
         },
         {
           id: 3,
-          dt: "2025-02-05",
+          dt: `${curY}-${lastM}-05`,
           ref: "JE-0003",
           desc: "Purchased Computer equipment",
           type: "Standard",
@@ -432,7 +438,7 @@ function WorkspaceContent() {
         },
         {
           id: 4,
-          dt: "2025-03-01",
+          dt: `${curY}-${curM}-01`,
           ref: "JE-0004",
           desc: "Jewellery Sales Revenue",
           type: "Standard",
@@ -446,21 +452,21 @@ function WorkspaceContent() {
         },
       ],
       invoices: [
-        { id: 1, num: "INV-001", cust: "Chow Tai Fook", dt: "2025-03-01", due: "2025-04-01", amt: 145000, pd: 45000, st: "Part-Paid" },
-        { id: 2, num: "INV-002", cust: "Luk Fook Jewellery", dt: "2025-04-10", due: "2025-05-10", amt: 88000, pd: 88000, st: "Paid" },
-        { id: 3, num: "INV-003", cust: "Local Retail Walkin", dt: "2025-05-20", due: "2025-06-20", amt: 12000, pd: 0, st: "Outstanding" },
+        { id: 1, num: "INV-001", cust: "Chow Tai Fook", dt: `${curY}-${curM}-01`, due: `${curY}-${curM}-30`, amt: 145000, pd: 45000, st: "Part-Paid" },
+        { id: 2, num: "INV-002", cust: "Luk Fook Jewellery", dt: `${curY}-${curM}-10`, due: `${curY}-${curM+1}-10`, amt: 88000, pd: 88000, st: "Paid" },
+        { id: 3, num: "INV-003", cust: "Local Retail Walkin", dt: `${curY}-${curM}-20`, due: `${curY}-${curM+1}-20`, amt: 12000, pd: 0, st: "Outstanding" },
       ],
       bills: [
-        { id: 1, num: "BILL-001", vend: "De Beers Diamond Corp", dt: "2025-02-15", due: "2025-03-15", amt: 65000, pd: 65000, st: "Paid" },
-        { id: 2, num: "BILL-002", vend: "HK Supplies Ltd", dt: "2025-03-25", due: "2025-04-25", amt: 4800, pd: 0, st: "Unpaid" },
+        { id: 1, num: "BILL-001", vend: "De Beers Diamond Corp", dt: `${curY}-${lastM}-15`, due: `${curY}-${curM}-15`, amt: 65000, pd: 65000, st: "Paid" },
+        { id: 2, num: "BILL-002", vend: "HK Supplies Ltd", dt: `${curY}-${curM}-25`, due: `${curY}-${curM+1}-25`, amt: 4800, pd: 0, st: "Unpaid" },
       ],
       assets: [
-        { id: 1, name: "Office iMacs & Server", cat: "Computers", date: "2025-01-05", cost: 45000, life: 5, pool: 30, res: 2000, status: "Active" },
-        { id: 2, name: "Delivery Van", cat: "Motor Vehicles", date: "2025-03-10", cost: 180000, life: 6, pool: 20, res: 15000, status: "Active" },
+        { id: 1, name: "Office iMacs & Server", cat: "Computers", date: `${curY}-01-05`, cost: 45000, life: 5, pool: 30, res: 2000, status: "Active" },
+        { id: 2, name: "Delivery Van", cat: "Motor Vehicles", date: `${curY}-03-10`, cost: 180000, life: 6, pool: 20, res: 15000, status: "Active" },
       ],
       employees: [
-        { id: 1, name: "Sathish Kumar", hkid: "A123456(7)", pos: "Accounting Manager", dept: "Finance", start: "2024-06-01", sal: 28000, housing: 4000, mpfEx: "no", st: "Active" },
-        { id: 2, name: "Chris Wong", hkid: "K765432(1)", pos: "Sales Coordinator", dept: "Sales", start: "2025-01-01", sal: 16000, housing: 0, mpfEx: "no", st: "Active" },
+        { id: 1, name: "Sathish Kumar", hkid: "A123456(7)", pos: "Accounting Manager", dept: "Finance", start: `${curY-1}-06-01`, sal: 28000, housing: 4000, mpfEx: "no", st: "Active" },
+        { id: 2, name: "Chris Wong", hkid: "K765432(1)", pos: "Sales Coordinator", dept: "Sales", start: `${curY}-01-01`, sal: 16000, housing: 0, mpfEx: "no", st: "Active" },
       ],
       bkBal: 440000,
       log: [

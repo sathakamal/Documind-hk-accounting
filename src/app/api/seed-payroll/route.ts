@@ -99,6 +99,7 @@ export async function POST() {
     ];
 
     // 3. Insert employees one by one without upsert to avoid HTTP transaction limits
+    const seededEmployees = [];
     for (const emp of employees) {
       const existingEmp = await prisma.employee.findFirst({
         where: {
@@ -107,15 +108,16 @@ export async function POST() {
         },
       });
 
+      let savedEmp;
       if (!existingEmp) {
-        await prisma.employee.create({
+        savedEmp = await prisma.employee.create({
           data: {
             ...emp,
             organizationId: orgId,
           },
         });
       } else {
-        await prisma.employee.update({
+        savedEmp = await prisma.employee.update({
           where: { id: existingEmp.id },
           data: {
             name: emp.name,
@@ -128,9 +130,14 @@ export async function POST() {
           },
         });
       }
+      seededEmployees.push(savedEmp);
     }
 
-    return NextResponse.json({ success: true, message: "Payroll data and required accounts seeded successfully!" });
+    return NextResponse.json({ 
+      success: true, 
+      message: "Payroll data and required accounts seeded successfully!",
+      data: { employees: seededEmployees }
+    });
   } catch (error: any) {
     console.error("Payroll seed error:", error);
     return NextResponse.json({ success: false, error: error.message || "Failed to seed payroll data" }, { status: 500 });
