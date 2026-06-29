@@ -51,8 +51,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "No active employees found" }, { status: 400 });
     }
 
-    // Generate payroll run number
-    const runNumber = generatePayrollRunNumber(new Date(paymentDate));
+    // Generate unique payroll run number for this month
+    const baseRunNumber = generatePayrollRunNumber(new Date(paymentDate));
+    const existingRunsCount = await prisma.payrollRun.count({
+      where: {
+        organizationId: orgId,
+        runNumber: {
+          startsWith: baseRunNumber,
+        },
+      },
+    });
+
+    const runNumber = existingRunsCount > 0 
+      ? `${baseRunNumber}-${String(existingRunsCount + 1).padStart(2, '0')}`
+      : baseRunNumber;
 
     // Calculate payroll for each employee
     let totalGrossPay = new Decimal(0);
