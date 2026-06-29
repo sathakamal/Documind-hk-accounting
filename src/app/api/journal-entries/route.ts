@@ -44,15 +44,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
-    // Run transaction
-    const entry = await prisma.$transaction(async (tx) => {
-      return await createJournalEntry(tx, {
-        description,
-        reference,
-        organizationId: session.user.organizationId,
-        date: date ? new Date(date) : undefined,
-        lines,
-      });
+    // Run WITHOUT transaction to avoid HTTP transaction limits
+    const entry = await createJournalEntry(prisma, {
+      description,
+      reference,
+      organizationId: session.user.organizationId,
+      date: date ? new Date(date) : undefined,
+      lines,
     });
 
     return NextResponse.json({ success: true, data: entry });

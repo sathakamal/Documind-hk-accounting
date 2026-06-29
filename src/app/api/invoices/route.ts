@@ -37,56 +37,62 @@ export async function POST(req: Request) {
 
     const orgId = session.user.organizationId;
 
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Create the Invoice
-      const invoice = await tx.invoice.create({
+    // 1. Create the Invoice WITHOUT nested writes to avoid HTTP transaction limits
+    const invoice = await prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        customerId,
+        issueDate: new Date(issueDate),
+        dueDate: new Date(dueDate),
+        currency: currency || "HKD",
+        exchangeRate: new Decimal(exchangeRate || 1),
+        subtotal: new Decimal(subtotal),
+        taxAmount: new Decimal(taxAmount || 0),
+        totalAmount: new Decimal(totalAmount),
+        balanceDue: new Decimal(totalAmount),
+        totalHkd: new Decimal(totalAmount).times(new Decimal(exchangeRate || 1)),
+        status: "SENT",
+        taxStatus: taxStatus || "ONSHORE",
+        organizationId: orgId,
+      },
+    });
+
+    // Create lines separately
+    await Promise.all(lines.map((l: any, idx: number) => 
+      prisma.invoiceLine.create({
         data: {
-          invoiceNumber,
-          customerId,
-          issueDate: new Date(issueDate),
-          dueDate: new Date(dueDate),
-          currency: currency || "HKD",
-          exchangeRate: new Decimal(exchangeRate || 1),
-          subtotal: new Decimal(subtotal),
-          taxAmount: new Decimal(taxAmount || 0),
-          totalAmount: new Decimal(totalAmount),
-          balanceDue: new Decimal(totalAmount),
-          totalHkd: new Decimal(totalAmount).times(new Decimal(exchangeRate || 1)),
-          status: "SENT",
-          taxStatus: taxStatus || "ONSHORE",
-          organizationId: orgId,
-          lines: {
-            create: lines.map((l: any, idx: number) => ({
-              description: l.description,
-              quantity: new Decimal(l.quantity || 1),
-              unitPrice: new Decimal(l.unitPrice),
-              amount: new Decimal(l.amount),
-              category: l.category || "Sales",
-              sortOrder: idx,
-            })),
-          },
-        },
+          description: l.description,
+          quantity: new Decimal(l.quantity || 1),
+          unitPrice: new Decimal(l.unitPrice),
+          amount: new Decimal(l.amount),
+          category: l.category || "Sales",
+          sortOrder: idx,
+          invoiceId: invoice.id,
+        }
+      })
+    ));
+
+    // 2. Post Journal Entry: Debit Accounts Receivable (1200), Credit Sales Revenue (4000)
+    const arAccount = await prisma.account.findFirst({ where: { organizationId: orgId, code: "1200" } });
+    const salesAccount = await prisma.account.findFirst({ where: { organizationId: orgId, code: "4000" } });
+
+    if (arAccount && salesAccount) {
+      const totalHkd = new Decimal(totalAmount).times(new Decimal(exchangeRate || 1));
+      await createJournalEntry(prisma, {
+        description: `Invoice ${invoiceNumber} created for Customer`,
+        reference: invoiceNumber,
+        organizationId: orgId,
+        date: new Date(issueDate),
+        lines: [
+          { accountId: arAccount.id, debit: totalHkd, credit: 0 },
+          { accountId: salesAccount.id, debit: 0, credit: totalHkd },
+        ],
       });
+    }
 
-      // 2. Post Journal Entry: Debit Accounts Receivable (1200), Credit Sales Revenue (4000)
-      const arAccount = await tx.account.findFirst({ where: { organizationId: orgId, code: "1200" } });
-      const salesAccount = await tx.account.findFirst({ where: { organizationId: orgId, code: "4000" } });
-
-      if (arAccount && salesAccount) {
-        const totalHkd = new Decimal(totalAmount).times(new Decimal(exchangeRate || 1));
-        await createJournalEntry(tx, {
-          description: `Invoice ${invoiceNumber} created for Customer`,
-          reference: invoiceNumber,
-          organizationId: orgId,
-          date: new Date(issueDate),
-          lines: [
-            { accountId: arAccount.id, debit: totalHkd, credit: 0 },
-            { accountId: salesAccount.id, debit: 0, credit: totalHkd },
-          ],
-        });
-      }
-
-      return invoice;
+    const result = await prisma.invoice.findUnique({
+      where: { id: invoice.id },
+      include: { lines: true },
     });
 
     return NextResponse.json({ success: true, data: result });

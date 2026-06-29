@@ -88,38 +88,37 @@ export async function POST(req: Request) {
       };
     });
 
-    // Create payroll run and lines within a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      const payrollRun = await tx.payrollRun.create({
+    // Create payroll run WITHOUT nested writes to avoid HTTP transaction limits
+    const payrollRun = await prisma.payrollRun.create({
+      data: {
+        runNumber,
+        periodStart: new Date(periodStart),
+        periodEnd: new Date(periodEnd),
+        paymentDate: new Date(paymentDate),
+        status: "DRAFT",
+        totalGrossPay,
+        totalEmployeeMpf,
+        totalEmployerMpf,
+        totalNetPay,
+        totalCost,
+        notes,
+        organizationId: orgId,
+      },
+    });
+
+    // Create lines separately
+    await Promise.all(payrollLines.map(line => 
+      prisma.payrollLine.create({
         data: {
-          runNumber,
-          periodStart: new Date(periodStart),
-          periodEnd: new Date(periodEnd),
-          paymentDate: new Date(paymentDate),
-          status: "DRAFT",
-          totalGrossPay,
-          totalEmployeeMpf,
-          totalEmployerMpf,
-          totalNetPay,
-          totalCost,
-          notes,
-          organizationId: orgId,
-        },
-      });
+          ...line,
+          payrollRunId: payrollRun.id,
+        }
+      })
+    ));
 
-      await Promise.all(payrollLines.map(line =>
-        tx.payrollLine.create({
-          data: {
-            ...line,
-            payrollRunId: payrollRun.id,
-          }
-        })
-      ));
-
-      return tx.payrollRun.findUnique({
-        where: { id: payrollRun.id },
-        include: { lines: { include: { employee: true } } },
-      });
+    const result = await prisma.payrollRun.findUnique({
+      where: { id: payrollRun.id },
+      include: { lines: { include: { employee: true } } },
     });
 
     return NextResponse.json({ success: true, data: result });

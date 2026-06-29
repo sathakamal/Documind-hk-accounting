@@ -32,24 +32,31 @@ export async function createJournalEntry(tx: any, {
     throw new Error(`Balanced entry violation: Debits (${totalDebit}) must equal Credits (${totalCredit})`);
   }
 
-  // 2. Create JournalEntry
+  // 2. Create JournalEntry WITHOUT nested writes to avoid HTTP transaction limits
   const entry = await tx.journalEntry.create({
     data: {
       description,
       reference,
       organizationId,
       date: date || new Date(),
-      lines: {
-        create: lines.map((l) => ({
-          accountId: l.accountId,
-          debit: new Decimal(l.debit),
-          credit: new Decimal(l.credit),
-        })),
-      },
     },
-    include: {
-      lines: true,
-    },
+  });
+
+  // Create lines separately
+  await Promise.all(lines.map((l) => 
+    tx.journalLine.create({
+      data: {
+        accountId: l.accountId,
+        debit: new Decimal(l.debit),
+        credit: new Decimal(l.credit),
+        journalEntryId: entry.id,
+      }
+    })
+  ));
+
+  const entryWithLines = await tx.journalEntry.findUnique({
+    where: { id: entry.id },
+    include: { lines: true },
   });
 
   // 3. Update account balances
@@ -77,5 +84,5 @@ export async function createJournalEntry(tx: any, {
     });
   }
 
-  return entry;
+  return entryWithLines;
 }
