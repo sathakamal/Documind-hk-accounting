@@ -7,7 +7,7 @@ interface JournalLineInput {
   credit: number | Decimal;
 }
 
-export async function createJournalEntry(tx: any, {
+export async function createJournalEntry(client: any, {
   description,
   reference,
   organizationId,
@@ -33,7 +33,7 @@ export async function createJournalEntry(tx: any, {
   }
 
   // 2. Create JournalEntry WITHOUT nested writes to avoid HTTP transaction limits
-  const entry = await tx.journalEntry.create({
+  const entry = await client.journalEntry.create({
     data: {
       description,
       reference,
@@ -43,25 +43,25 @@ export async function createJournalEntry(tx: any, {
   });
 
   // Create lines separately
-  await Promise.all(lines.map((l) => 
-    tx.journalLine.create({
+  for (const l of lines) {
+    await client.journalLine.create({
       data: {
         accountId: l.accountId,
         debit: new Decimal(l.debit),
         credit: new Decimal(l.credit),
         journalEntryId: entry.id,
       }
-    })
-  ));
+    });
+  }
 
-  const entryWithLines = await tx.journalEntry.findUnique({
+  const entryWithLines = await client.journalEntry.findUnique({
     where: { id: entry.id },
     include: { lines: true },
   });
 
   // 3. Update account balances
   for (const line of lines) {
-    const acc = await tx.account.findUnique({
+    const acc = await client.account.findUnique({
       where: { id: line.accountId },
     });
     if (!acc) throw new Error(`Account not found: ${line.accountId}`);
@@ -78,7 +78,7 @@ export async function createJournalEntry(tx: any, {
       newBalance = newBalance.plus(credit).minus(debit);
     }
 
-    await tx.account.update({
+    await client.account.update({
       where: { id: acc.id },
       data: { balance: newBalance },
     });

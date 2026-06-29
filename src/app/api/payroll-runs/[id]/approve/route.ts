@@ -89,7 +89,7 @@ export async function POST(
       },
     ];
 
-    // Create journal entry
+    // Create journal entry WITHOUT transaction to avoid HTTP transaction limits
     const journalEntry = await createJournalEntry(prisma, {
       description: `Payroll ${payrollRun.runNumber} for period ${payrollRun.periodStart.toISOString().split('T')[0]} to ${payrollRun.periodEnd.toISOString().split('T')[0]}`,
       reference: payrollRun.runNumber,
