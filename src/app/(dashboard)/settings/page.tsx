@@ -101,6 +101,33 @@ export default function SettingsPage() {
     }
   };
 
+  const handleResetData = async () => {
+    if (!confirm("⚠️ WARNING: This will permanently delete all your payroll, accounting, and master data. This cannot be undone. Are you sure?")) {
+      return;
+    }
+
+    try {
+      toast.info("Clearing application data...");
+      const res = await fetch("/api/reset-data", { method: "POST" });
+      const data = await res.json();
+      
+      if (data.success) {
+        // Clear Dashboard LocalStorage
+        localStorage.removeItem("hkpro3_next");
+        toast.success("All data cleared successfully!");
+        
+        // Refresh page to reset state
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        toast.error(data.error);
+      }
+    } catch (err) {
+      toast.error("Failed to reset data");
+    }
+  };
+
   if (loading) {
     return (
       <div>
@@ -111,7 +138,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader title="Settings" description="Manage your account and preferences" />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <Card>
@@ -205,15 +232,33 @@ export default function SettingsPage() {
                 Current financial year: {months.find(m => m.value === formData.financialYearStartMonth)?.label} {formData.financialYearStartDay}
               </p>
             </div>
+            <div className="pt-4">
+              <Button onClick={handleSave} disabled={saving} className="w-full">
+                {saving ? "Saving..." : "Save Settings"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
-
-        <div className="lg:col-span-2 flex justify-end">
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Changes"}
-          </Button>
-        </div>
       </div>
+
+      <Card className="border-destructive/50">
+        <CardHeader>
+          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="font-semibold">Reset Application Data</div>
+              <div className="text-sm text-muted-foreground">
+                Delete all payroll, accounting entries, employees, and dashboard state. This action is permanent.
+              </div>
+            </div>
+            <Button variant="destructive" onClick={handleResetData}>
+              Reset Everything
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
