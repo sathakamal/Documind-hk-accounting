@@ -76,22 +76,23 @@ export async function POST() {
       },
     ];
 
-    // Insert employees
-    for (const emp of employees) {
-      await prisma.employee.upsert({
-        where: {
-          organizationId_code: {
-            organizationId: orgId,
-            code: emp.code,
-          },
-        },
-        update: {},
-        create: {
+    // Insert employees within a transaction
+    await prisma.$transaction(async (tx) => {
+      const employeesToCreate = [];
+      for (const emp of employees) {
+        employeesToCreate.push({
           ...emp,
           organizationId: orgId,
-        },
-      });
-    }
+        });
+      }
+
+      if (employeesToCreate.length > 0) {
+        await tx.employee.createMany({
+          data: employeesToCreate,
+          skipDuplicates: true,
+        });
+      }
+    });
 
     return NextResponse.json({ success: true, message: "Payroll data seeded successfully!" });
   } catch (error: any) {
