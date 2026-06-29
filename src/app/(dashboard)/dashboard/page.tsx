@@ -324,9 +324,11 @@ function WorkspaceContent() {
     let dr = 0, cr = 0;
     journalsList.forEach((j) => {
       j.lines.forEach((l) => {
-        if (l.a === code) {
-          dr += +l.dr || 0;
-          cr += +l.cr || 0;
+        // Handle both DB schema (accountId) and Dashboard schema (a)
+        const lineAcc = (l as any).a || (l as any).accountId;
+        if (lineAcc === code || lineAcc === D.accounts.find(acc => acc.c === code)?.c) {
+          dr += +l.dr || +(l as any).debit || 0;
+          cr += +l.cr || +(l as any).credit || 0;
         }
       });
     });

@@ -179,6 +179,24 @@ export default function PayrollPage() {
               ts: new Date().toISOString()
             };
 
+            // Force refresh accounts list to include any auto-created accounts
+            const accRes = await fetch("/api/accounts");
+            const accData = await accRes.json();
+            if (accData.success) {
+              // Map DB accounts to Dashboard schema
+              const dbAccs = accData.data.map((a: any) => ({
+                c: a.code,
+                n: a.name,
+                t: a.type.charAt(0) + a.type.slice(1).toLowerCase(),
+                nr: (a.type === "ASSET" || a.type === "EXPENSE") ? "Dr" : "Cr"
+              }));
+              
+              // Merge with existing dashboard accounts, prioritizing DB records
+              const existingCodes = new Set(dbAccs.map((a: any) => a.c));
+              const localOnly = D.accounts.filter((a: any) => !existingCodes.has(a.c));
+              D.accounts = [...dbAccs, ...localOnly].sort((a, b) => a.c.localeCompare(b.c));
+            }
+
             D.journals = [newJE, ...D.journals];
             localStorage.setItem("hkpro3_next", JSON.stringify(D));
             toast.info("Dashboard reports updated with payroll data");
