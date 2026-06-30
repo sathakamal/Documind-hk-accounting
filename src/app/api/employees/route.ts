@@ -1,71 +1,69 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { generateEmployeeCode } from "@/lib/payroll";
 
+// GET /api/employees - Get all employees
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
-
     const employees = await prisma.employee.findMany({
-      where: { organizationId: session.user.organizationId },
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ success: true, data: employees });
+    return NextResponse.json({
+      success: true,
+      data: employees,
+    });
   } catch (error) {
-    console.error("Employees GET error:", error);
-    return NextResponse.json({ success: false, error: "Failed to fetch employees" }, { status: 500 });
+    console.error("Error fetching employees:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch employees" },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(req: Request) {
+// POST /api/employees - Create a new employee
+export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
-
-    const body = await req.json();
-    const { name, hkid, position, department, startDate, basicSalary, housingAllowance, mpfExempt, notes } = body;
+    const body = await request.json();
     
-    const orgId = session.user.organizationId;
-    
-    // Get next employee number
+    // Generate employee code (EMP-001, EMP-002, etc.)
     const lastEmployee = await prisma.employee.findFirst({
-      where: { organizationId: orgId },
       orderBy: { createdAt: "desc" },
     });
     
-    const nextNumber = lastEmployee 
-      ? parseInt(lastEmployee.code.split("-")[1]) + 1 
-      : 1;
-    
-    const code = generateEmployeeCode(nextNumber);
+    let nextCode = "EMP-001";
+    if (lastEmployee?.code) {
+      const lastNumber = parseInt(lastEmployee.code.split("-")[1]);
+      nextCode = `EMP-${(lastNumber + 1).toString().padStart(3, "0")}`;
+    }
 
     const employee = await prisma.employee.create({
       data: {
-        code,
-        name,
-        hkid,
-        position,
-        department,
-        startDate: new Date(startDate),
-        basicSalary,
-        housingAllowance: housingAllowance || 0,
-        mpfExempt: mpfExempt || false,
-        notes,
-        organizationId: orgId,
+        code: nextCode,
+        name: body.name,
+        hkid: body.hkid || null,
+        position: body.position || null,
+        department: body.department || null,
+        startDate: new Date(body.startDate),
+        basicSalary: parseFloat(body.basicSalary),
+        housingAllowance: parseFloat(body.housingAllowance) || 0,
+        mpfExempt: body.mpfExempt || false,
+        status: "ACTIVE",
+        notes: body.notes || null,
+        organizationId: "demo-org", // Default organization for demo
       },
     });
 
-    return NextResponse.json({ success: true, data: employee });
-  } catch (error: any) {
-    console.error("Employees POST error:", error);
-    return NextResponse.json({ success: false, error: error.message || "Failed to create employee" }, { status: 500 });
+    return NextResponse.json({
+      success: true,
+      data: employee,
+      message: "Employee created successfully",
+    });
+  } catch (error) {
+    console.error("Error creating employee:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to create employee" },
+      { status: 500 }
+    );
   }
 }
