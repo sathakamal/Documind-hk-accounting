@@ -464,6 +464,7 @@ export default function EmployeesPage() {
                   <th>HKID</th>
                   <th>Position</th>
                   <th>Department</th>
+                  <th>Start Date</th>
                   <th className="hk-nm">Basic Salary</th>
                   <th>MPF Contributions</th>
                   <th>Status</th>
@@ -494,6 +495,12 @@ export default function EmployeesPage() {
                           {emp.department || "-"}
                         </div>
                       </td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          {formatDate(emp.startDate)}
+                        </div>
+                      </td>
                       <td className="hk-nm font-bold">
                         {formatMoney(emp.basicSalary, "HKD")}
                       </td>
@@ -512,28 +519,28 @@ export default function EmployeesPage() {
                       <td>
                         <div className="flex gap-1">
                           <button
-                            className="hk-btn hk-btn-o hk-btn-s"
+                            className="hk-btn hk-btn-b hk-btn-s"
                             onClick={() => openViewDialog(emp)}
                             title="View Details"
                           >
                             <Eye className="h-3 w-3" />
                           </button>
                           <button
-                            className="hk-btn hk-btn-o hk-btn-s"
+                            className="hk-btn hk-btn-gr hk-btn-s"
                             onClick={() => openEditDialog(emp)}
                             title="Edit"
                           >
                             <Edit className="h-3 w-3" />
                           </button>
                           <button
-                            className="hk-btn hk-btn-o hk-btn-s"
+                            className="hk-btn hk-btn-g hk-btn-s"
                             onClick={() => handleToggleStatus(emp.id, emp.status)}
                             title={emp.status === "ACTIVE" ? "Deactivate" : "Activate"}
                           >
                             {emp.status === "ACTIVE" ? (
-                              <XCircle className="h-3 w-3 text-gray-500" />
+                              <XCircle className="h-3 w-3" />
                             ) : (
-                              <CheckCircle className="h-3 w-3 text-emerald-500" />
+                              <CheckCircle className="h-3 w-3" />
                             )}
                           </button>
                           <button
