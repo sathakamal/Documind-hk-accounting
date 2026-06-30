@@ -292,7 +292,8 @@ model JournalEntry {
   organizationId String
   organization   Organization  @relation(fields: [organizationId], references: [id])
   lines          JournalLine[]
-  payrollRun     PayrollRun?
+  payrollRun     PayrollRun?   @relation("PayrollAccrual")
+  payrollPayment PayrollRun?   @relation("PayrollPayment")
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 }
@@ -364,7 +365,9 @@ model PayrollRun {
   organization   Organization @relation(fields: [organizationId], references: [id])
   lines          PayrollLine[]
   journalEntryId String? @unique
-  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id])
+  journalEntry   JournalEntry? @relation("PayrollAccrual", fields: [journalEntryId], references: [id])
+  paymentEntryId String? @unique
+  paymentEntry   JournalEntry? @relation("PayrollPayment", fields: [paymentEntryId], references: [id])
   
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

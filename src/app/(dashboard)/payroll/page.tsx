@@ -17,14 +17,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatMoney, formatDate } from "@/lib/utils";
-import { Plus, CheckCircle2, History } from "lucide-react";
+import { Plus, CheckCircle2, History, DollarSign, AlertTriangle, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { addDays, format, differenceInDays } from "date-fns";
 
 interface Employee {
   id: string;
   code: string;
   name: string;
+  hkid: string | null;
   basicSalary: number;
   housingAllowance: number;
   mpfExempt: boolean;
@@ -214,6 +216,27 @@ export default function PayrollPage() {
     }
   };
 
+  const handleMarkAsPaid = async (payrollId: string) => {
+    if (!confirm("Are you sure you want to mark this payroll as paid? This will update the status and can't be undone.")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/payroll-runs/${payrollId}/pay`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Payroll marked as paid");
+        fetchData();
+      } else {
+        toast.error(data.error);
+      }
+    } catch (err) {
+      toast.error("Failed to mark payroll as paid");
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -223,6 +246,25 @@ export default function PayrollPage() {
     );
   }
 
+  // Calculate next MPF payment deadline (10th of next month)
+  const getNextMPFDeadline = () => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    // MPF payment is due on the 10th of the following month
+    const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+    const nextMonthYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+    
+    const deadline = new Date(nextMonthYear, nextMonth, 10);
+    return deadline;
+  };
+
+  const nextMPFDeadline = getNextMPFDeadline();
+  const daysUntilDeadline = differenceInDays(nextMPFDeadline, new Date());
+  const isDeadlineClose = daysUntilDeadline <= 7;
+  const isDeadlineCritical = daysUntilDeadline <= 3;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -231,14 +273,14 @@ export default function PayrollPage() {
         actions={
           <div className="flex gap-2">
             <Link href="/payroll-history">
-              <Button variant="outline">
+              <Button variant="outline" className="hk-btn hk-btn-o">
                 <History className="w-4 h-4 mr-2" />
                 History
               </Button>
             </Link>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="hk-btn hk-btn-n">
                   <Plus className="w-4 h-4 mr-2" />
                   New Payroll Run
                 </Button>
@@ -248,8 +290,8 @@ export default function PayrollPage() {
                   <DialogTitle>Create New Payroll Run</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-6 pt-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
+                  <div className="hk-grid hk-g3">
+                    <div className="hk-fg">
                       <Label htmlFor="periodStart">Period Start *</Label>
                       <Input
                         id="periodStart"
@@ -257,9 +299,10 @@ export default function PayrollPage() {
                         value={formData.periodStart}
                         onChange={(e) => setFormData({ ...formData, periodStart: e.target.value })}
                         required
+                        className="hk-input"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="hk-fg">
                       <Label htmlFor="periodEnd">Period End *</Label>
                       <Input
                         id="periodEnd"
@@ -267,9 +310,10 @@ export default function PayrollPage() {
                         value={formData.periodEnd}
                         onChange={(e) => setFormData({ ...formData, periodEnd: e.target.value })}
                         required
+                        className="hk-input"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="hk-fg">
                       <Label htmlFor="paymentDate">Payment Date *</Label>
                       <Input
                         id="paymentDate"
@@ -277,6 +321,7 @@ export default function PayrollPage() {
                         value={formData.paymentDate}
                         onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
                         required
+                        className="hk-input"
                       />
                     </div>
                   </div>
@@ -289,63 +334,64 @@ export default function PayrollPage() {
                         variant="outline"
                         size="sm"
                         onClick={toggleAllEmployees}
+                        className="hk-btn hk-btn-o hk-btn-s"
                       >
                         {selectedEmployees.length === employees.length ? "Deselect All" : "Select All"}
                       </Button>
                     </div>
                     <div className="border border-border rounded-lg">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="border-border">
-                            <TableHead className="w-12">
+                      <table className="hk-table">
+                        <thead>
+                          <tr>
+                            <th className="w-12">
                               <Checkbox
                                 checked={employees.length > 0 && selectedEmployees.length === employees.length}
                                 onCheckedChange={toggleAllEmployees}
                               />
-                            </TableHead>
-                            <TableHead className="text-muted-foreground">Code</TableHead>
-                            <TableHead className="text-muted-foreground">Name</TableHead>
-                            <TableHead className="text-muted-foreground text-right">Basic Salary</TableHead>
-                            <TableHead className="text-muted-foreground">MPF</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
+                            </th>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th className="hk-nm">Basic Salary</th>
+                            <th>MPF</th>
+                          </tr>
+                        </thead>
+                        <tbody>
                           {employees.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                            <tr>
+                              <td colSpan={5} className="text-center text-muted-foreground py-8">
                                 No active employees. Please add employees first.
-                              </TableCell>
-                            </TableRow>
+                              </td>
+                            </tr>
                           ) : (
                             employees.map((emp) => (
-                              <TableRow key={emp.id} className="border-border">
-                                <TableCell>
+                              <tr key={emp.id}>
+                                <td>
                                   <Checkbox
                                     checked={selectedEmployees.includes(emp.id)}
                                     onCheckedChange={() => toggleEmployee(emp.id)}
                                   />
-                                </TableCell>
-                                <TableCell className="font-mono text-primary">{emp.code}</TableCell>
-                                <TableCell className="font-medium text-foreground">{emp.name}</TableCell>
-                                <TableCell className="text-right font-mono text-foreground">{formatMoney(emp.basicSalary, "HKD")}</TableCell>
-                                <TableCell>
+                                </td>
+                                <td className="font-mono text-primary">{emp.code}</td>
+                                <td className="font-medium text-foreground">{emp.name}</td>
+                                <td className="hk-nm font-mono text-foreground">{formatMoney(emp.basicSalary, "HKD")}</td>
+                                <td>
                                   <span className={emp.mpfExempt ? "text-muted-foreground" : "text-emerald-500"}>
                                     {emp.mpfExempt ? "Exempt" : "Required"}
                                   </span>
-                                </TableCell>
-                              </TableRow>
+                                </td>
+                              </tr>
                             ))
                           )}
-                        </TableBody>
-                      </Table>
+                        </tbody>
+                      </table>
                     </div>
                   </div>
 
                   <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="hk-btn hk-btn-o">
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={selectedEmployees.length === 0}>
+                    <Button type="submit" disabled={selectedEmployees.length === 0} className="hk-btn hk-btn-n">
                       Create Payroll Run
                     </Button>
                   </div>
@@ -356,95 +402,138 @@ export default function PayrollPage() {
         }
       />
 
+      {/* MPF Payment Deadline Reminder */}
+      <div className={`hk-alert ${isDeadlineCritical ? "hk-a-red" : isDeadlineClose ? "hk-a-orange" : "hk-a-blue"}`}>
+        <div className="flex items-start gap-3">
+          <AlertTriangle className={`w-5 h-5 mt-0.5 ${isDeadlineCritical ? "text-red-500" : isDeadlineClose ? "text-orange-500" : "text-blue-500"}`} />
+          <div className="flex-1">
+            <div className="font-semibold text-foreground mb-1">
+              MPF Payment Deadline Reminder
+            </div>
+            <div className="text-sm text-muted-foreground mb-2">
+              Next MPF contribution payment is due on <strong>{format(nextMPFDeadline, "MMMM d, yyyy")}</strong> (10th of following month).
+              {daysUntilDeadline > 0 ? (
+                <span> You have <strong>{daysUntilDeadline} day{daysUntilDeadline !== 1 ? "s" : ""}</strong> remaining.</span>
+              ) : (
+                <span className="text-red-500 font-semibold"> The deadline has passed! Please make payment immediately to avoid penalties.</span>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              <strong>HK MPF Regulations:</strong> Monthly contributions must be paid to MPF trustees by the 10th day of the following month. 
+              Penalties: HK$5,000 fine per employee + interest on arrears. Employees earning less than HK$7,100 are exempt from employee contributions.
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <div className={`hk-badge ${isDeadlineCritical ? "hk-b-red" : isDeadlineClose ? "hk-b-orange" : "hk-b-blue"}`}>
+              <Calendar className="w-3 h-3 mr-1" />
+              {daysUntilDeadline > 0 ? `${daysUntilDeadline}d left` : "OVERDUE"}
+            </div>
+            <Link href="/mpf">
+              <Button size="sm" className={`hk-btn ${isDeadlineCritical ? "hk-btn-r" : isDeadlineClose ? "hk-btn-o" : "hk-btn-b"}`}>
+                View MPF Details
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-6">
         {payrollRuns.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12 text-muted-foreground">
+          <div className="hk-card">
+            <div className="text-center py-12 text-muted-foreground">
               No payroll runs yet. Click "New Payroll Run" to get started.
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ) : (
           payrollRuns.map((payroll) => (
-            <Card key={payroll.id}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="hk-card" key={payroll.id}>
+              <div className="hk-card-h flex flex-row items-center justify-between pb-2">
                 <div>
-                  <CardTitle>{payroll.runNumber}</CardTitle>
+                  <h3>{payroll.runNumber}</h3>
                   <p className="text-sm text-muted-foreground mt-1">
                     {formatDate(payroll.periodStart)} - {formatDate(payroll.periodEnd)} | Payment: {formatDate(payroll.paymentDate)}
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    payroll.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-500" :
-                    payroll.status === "PAID" ? "bg-blue-500/20 text-blue-500" :
-                    "bg-yellow-500/20 text-yellow-500"
+                  <span className={`hk-badge ${
+                    payroll.status === "APPROVED" ? "hk-b-green" :
+                    payroll.status === "PAID" ? "hk-b-blue" :
+                    "hk-b-yellow"
                   }`}>
                     {payroll.status}
                   </span>
                   {payroll.status === "DRAFT" && (
-                    <Button onClick={() => handleApprove(payroll.id)}>
+                    <Button onClick={() => handleApprove(payroll.id)} className="hk-btn hk-btn-gr">
                       <CheckCircle2 className="w-4 h-4 mr-2" />
                       Approve
                     </Button>
                   )}
+                  {payroll.status === "APPROVED" && (
+                    <Button onClick={() => handleMarkAsPaid(payroll.id)} className="hk-btn hk-btn-g">
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      Mark as Paid
+                    </Button>
+                  )}
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                  <div className="bg-secondary rounded-lg p-3">
-                    <p className="text-sm text-muted-foreground">Gross Pay</p>
-                    <p className="text-lg font-mono font-bold">{formatMoney(payroll.totalGrossPay, "HKD")}</p>
+              </div>
+              <div>
+                <div className="hk-grid hk-g5 mb-6">
+                  <div className="hk-stat">
+                    <div className="lb">Gross Pay</div>
+                    <div className="vl">{formatMoney(payroll.totalGrossPay, "HKD")}</div>
                   </div>
-                  <div className="bg-secondary rounded-lg p-3">
-                    <p className="text-sm text-muted-foreground">Employee MPF</p>
-                    <p className="text-lg font-mono font-bold text-destructive">{formatMoney(payroll.totalEmployeeMpf, "HKD")}</p>
+                  <div className="hk-stat">
+                    <div className="lb">Employee MPF</div>
+                    <div className="vl" style={{ color: "var(--red)" }}>{formatMoney(payroll.totalEmployeeMpf, "HKD")}</div>
                   </div>
-                  <div className="bg-secondary rounded-lg p-3">
-                    <p className="text-sm text-muted-foreground">Employer MPF</p>
-                    <p className="text-lg font-mono font-bold text-orange-500">{formatMoney(payroll.totalEmployerMpf, "HKD")}</p>
+                  <div className="hk-stat">
+                    <div className="lb">Employer MPF</div>
+                    <div className="vl" style={{ color: "var(--orange)" }}>{formatMoney(payroll.totalEmployerMpf, "HKD")}</div>
                   </div>
-                  <div className="bg-secondary rounded-lg p-3">
-                    <p className="text-sm text-muted-foreground">Net Pay</p>
-                    <p className="text-lg font-mono font-bold text-emerald-500">{formatMoney(payroll.totalNetPay, "HKD")}</p>
+                  <div className="hk-stat">
+                    <div className="lb">Net Pay</div>
+                    <div className="vl" style={{ color: "var(--green)" }}>{formatMoney(payroll.totalNetPay, "HKD")}</div>
                   </div>
-                  <div className="bg-secondary rounded-lg p-3">
-                    <p className="text-sm text-muted-foreground">Total Cost</p>
-                    <p className="text-lg font-mono font-bold text-primary">{formatMoney(payroll.totalCost, "HKD")}</p>
+                  <div className="hk-stat">
+                    <div className="lb">Total Cost</div>
+                    <div className="vl" style={{ color: "var(--navy)" }}>{formatMoney(payroll.totalCost, "HKD")}</div>
                   </div>
                 </div>
 
-                <div className="border rounded-lg overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-secondary">
-                      <TableRow>
-                        <TableHead>Employee</TableHead>
-                        <TableHead className="text-right">Basic</TableHead>
-                        <TableHead className="text-right">Housing</TableHead>
-                        <TableHead className="text-right">Gross</TableHead>
-                        <TableHead className="text-right">EE MPF</TableHead>
-                        <TableHead className="text-right">Net</TableHead>
-                        <TableHead className="text-right">ER MPF</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                <div className="hk-tw">
+                  <table className="hk-table">
+                    <thead>
+                      <tr>
+                        <th>Employee</th>
+                        <th>HKID</th>
+                        <th className="hk-nm">Basic</th>
+                        <th className="hk-nm">Housing</th>
+                        <th className="hk-nm">Gross</th>
+                        <th className="hk-nm">EE MPF</th>
+                        <th className="hk-nm">Net</th>
+                        <th className="hk-nm">ER MPF</th>
+                        <th className="hk-nm">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
                       {payroll.lines.map((line) => (
-                        <TableRow key={line.id}>
-                          <TableCell className="font-medium">{line.employee.name}</TableCell>
-                          <TableCell className="text-right font-mono">{formatMoney(line.basicSalary, "HKD")}</TableCell>
-                          <TableCell className="text-right font-mono">{formatMoney(line.housingAllowance, "HKD")}</TableCell>
-                          <TableCell className="text-right font-mono font-bold">{formatMoney(line.grossPay, "HKD")}</TableCell>
-                          <TableCell className="text-right font-mono text-destructive">{formatMoney(line.employeeMpf, "HKD")}</TableCell>
-                          <TableCell className="text-right font-mono font-bold text-emerald-500">{formatMoney(line.netPay, "HKD")}</TableCell>
-                          <TableCell className="text-right font-mono text-orange-500">{formatMoney(line.employerMpf, "HKD")}</TableCell>
-                          <TableCell className="text-right font-mono font-bold text-primary">{formatMoney(line.totalCost, "HKD")}</TableCell>
-                        </TableRow>
+                        <tr key={line.id}>
+                          <td className="font-medium">{line.employee.name}</td>
+                          <td className="font-mono text-sm">{line.employee.hkid || "-"}</td>
+                          <td className="hk-nm font-mono">{formatMoney(line.basicSalary, "HKD")}</td>
+                          <td className="hk-nm font-mono">{formatMoney(line.housingAllowance, "HKD")}</td>
+                          <td className="hk-nm font-mono" style={{ fontWeight: "bold" }}>{formatMoney(line.grossPay, "HKD")}</td>
+                          <td className="hk-nm font-mono" style={{ color: "var(--red)" }}>{formatMoney(line.employeeMpf, "HKD")}</td>
+                          <td className="hk-nm font-mono" style={{ color: "var(--green)", fontWeight: "bold" }}>{formatMoney(line.netPay, "HKD")}</td>
+                          <td className="hk-nm font-mono" style={{ color: "var(--orange)" }}>{formatMoney(line.employerMpf, "HKD")}</td>
+                          <td className="hk-nm font-mono" style={{ fontWeight: "bold" }}>{formatMoney(line.totalCost, "HKD")}</td>
+                        </tr>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </tbody>
+                  </table>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))
         )}
       </div>
