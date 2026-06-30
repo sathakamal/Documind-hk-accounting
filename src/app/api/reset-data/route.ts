@@ -18,6 +18,7 @@ export async function POST() {
     const invoiceIds = (await prisma.invoice.findMany({ where: { organizationId: orgId }, select: { id: true } })).map(i => i.id);
     const billIds = (await prisma.bill.findMany({ where: { organizationId: orgId }, select: { id: true } })).map(b => b.id);
     const journalEntryIds = (await prisma.journalEntry.findMany({ where: { organizationId: orgId }, select: { id: true } })).map(j => j.id);
+    const documentIds = (await prisma.document.findMany({ where: { organizationId: orgId }, select: { id: true } })).map(d => d.id);
 
     // 2. Delete child records using flat ID lists
     if (payrollRunIds.length > 0) {
@@ -38,21 +39,18 @@ export async function POST() {
     await prisma.invoice.deleteMany({ where: { organizationId: orgId } });
     await prisma.bill.deleteMany({ where: { organizationId: orgId } });
     await prisma.journalEntry.deleteMany({ where: { organizationId: orgId } });
+    await prisma.document.deleteMany({ where: { organizationId: orgId } });
 
     // 4. Delete standalone records
     await prisma.customer.deleteMany({ where: { organizationId: orgId } });
     await prisma.vendor.deleteMany({ where: { organizationId: orgId } });
     await prisma.bankTransaction.deleteMany({ where: { organizationId: orgId } });
-    await prisma.document.deleteMany({ where: { organizationId: orgId } });
     await prisma.exchangeRate.deleteMany({ where: { organizationId: orgId } });
-    await prisma.orgCurrency.deleteMany({ where: { organizationId: orgId, isBase: false } });
+    await prisma.orgCurrency.deleteMany({ where: { organizationId: orgId } });
     await prisma.employee.deleteMany({ where: { organizationId: orgId } });
 
-    // 5. Finally, reset account balances to 0
-    await prisma.account.updateMany({
-      where: { organizationId: orgId },
-      data: { balance: 0 }
-    });
+    // 5. Delete accounts (except base accounts if needed)
+    await prisma.account.deleteMany({ where: { organizationId: orgId } });
 
     return NextResponse.json({ success: true, message: "Organization data cleared successfully!" });
   } catch (error: any) {

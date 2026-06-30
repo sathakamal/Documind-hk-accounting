@@ -210,16 +210,166 @@ function WorkspaceContent() {
     log: [],
   });
 
-  // Load from localstorage on mount
+  // Load data from database and merge with localstorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem("hkpro3_next");
-    if (saved) {
+    const loadData = async () => {
       try {
-        setD(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse local storage data", e);
+        // Start with default state
+        const defaultState: HKProState = {
+          settings: { name: "DocuMind HK Pro Co.", brn: "88888888", cr: "77777777", fw: "pe", cur: "HKD", addr: "Central, Hong Kong", aud: "S. K. Chan & Co. CPA" },
+          accounts: [...defCOA],
+          journals: [],
+          invoices: [],
+          bills: [],
+          assets: [],
+          employees: [],
+          bkBal: 0,
+          log: [],
+        };
+
+        // Try to load from database first
+        let dbState = { ...defaultState };
+        
+        try {
+          // Fetch accounts from database
+          const accRes = await fetch("/api/accounts");
+          if (accRes.ok) {
+            const accData = await accRes.json();
+            if (accData.success && accData.data.length > 0) {
+              // Map DB accounts to Dashboard schema
+              const dbAccs = accData.data.map((a: any) => ({
+                c: a.code,
+                n: a.name,
+                t: a.type.charAt(0) + a.type.slice(1).toLowerCase(),
+                nr: (a.type === "ASSET" || a.type === "EXPENSE") ? "Dr" : "Cr"
+              }));
+              dbState.accounts = [...dbAccs, ...defCOA.filter(defAcc => 
+                !dbAccs.some(dbAcc => dbAcc.c === defAcc.c)
+              )].sort((a, b) => a.c.localeCompare(b.c));
+            }
+          }
+
+          // Fetch journals from database
+          const journalRes = await fetch("/api/journal-entries");
+          if (journalRes.ok) {
+            const journalData = await journalRes.json();
+            if (journalData.success && journalData.data.length > 0) {
+              // Map DB journal entries to Dashboard schema
+              dbState.journals = journalData.data.map((j: any) => ({
+                id: j.id,
+                dt: new Date(j.date).toISOString().split('T')[0],
+                ref: j.reference || '',
+                desc: j.description,
+                type: 'MANUAL',
+                cur: 'HKD',
+                rate: 1,
+                lines: j.lines.map((l: any) => ({
+                  a: l.account.code,
+                  ld: j.description,
+                  dr: parseFloat(l.debit),
+                  cr: parseFloat(l.credit)
+                })),
+                ts: new Date(j.createdAt).toISOString()
+              }));
+            }
+          }
+
+          // Fetch employees from database
+          const empRes = await fetch("/api/employees");
+          if (empRes.ok) {
+            const empData = await empRes.json();
+            if (empData.success && empData.data.length > 0) {
+              dbState.employees = empData.data.map((e: any) => ({
+                id: e.id,
+                name: e.name,
+                hkid: e.hkid || '',
+                pos: e.position || '',
+                dept: e.department || '',
+                start: new Date(e.startDate).toISOString().split('T')[0],
+                sal: parseFloat(e.basicSalary),
+                housing: parseFloat(e.housingAllowance),
+                mpfEx: e.mpfExempt ? 'Yes' : 'No',
+                st: e.status
+              }));
+            }
+          }
+
+        } catch (dbError) {
+          console.error("Failed to load data from database:", dbError);
+        }
+
+        // Load from localstorage
+        const saved = localStorage.getItem("hkpro3_next");
+        if (saved) {
+          try {
+            const localState = JSON.parse(saved);
+            
+            // Merge database state with local storage state
+            // Priority: DB data for core records, local storage for UI state
+            const mergedState: HKProState = {
+              ...dbState,
+              // Keep local storage settings if they exist
+              settings: localState.settings || dbState.settings,
+              // Merge accounts: DB accounts + local-only accounts
+              accounts: [
+                ...dbState.accounts,
+                ...(localState.accounts || []).filter((localAcc: any) => 
+                  !dbState.accounts.some(dbAcc => dbAcc.c === localAcc.c)
+                )
+              ].sort((a, b) => a.c.localeCompare(b.c)),
+              // Merge journals: DB journals + local-only journals
+              journals: [
+                ...dbState.journals,
+                ...(localState.journals || []).filter((localJour: any) => 
+                  !dbState.journals.some(dbJour => dbJour.id === localJour.id)
+                )
+              ],
+              // Merge other arrays similarly
+              invoices: localState.invoices || dbState.invoices,
+              bills: localState.bills || dbState.bills,
+              assets: localState.assets || dbState.assets,
+              employees: [
+                ...dbState.employees,
+                ...(localState.employees || []).filter((localEmp: any) => 
+                  !dbState.employees.some(dbEmp => dbEmp.id === localEmp.id)
+                )
+              ],
+              bkBal: localState.bkBal || dbState.bkBal,
+              log: [...(localState.log || []), ...dbState.log].slice(0, 100) // Keep recent logs
+            };
+            
+            setD(mergedState);
+            // Save merged state back to local storage
+            localStorage.setItem("hkpro3_next", JSON.stringify(mergedState));
+            return;
+          } catch (e) {
+            console.error("Failed to parse local storage data", e);
+          }
+        }
+
+        // If no local storage, use database state
+        setD(dbState);
+        localStorage.setItem("hkpro3_next", JSON.stringify(dbState));
+        
+      } catch (error) {
+        console.error("Failed to load data:", error);
+        // Fallback to default state
+        const defaultState: HKProState = {
+          settings: { name: "DocuMind HK Pro Co.", brn: "88888888", cr: "77777777", fw: "pe", cur: "HKD", addr: "Central, Hong Kong", aud: "S. K. Chan & Co. CPA" },
+          accounts: [...defCOA],
+          journals: [],
+          invoices: [],
+          bills: [],
+          assets: [],
+          employees: [],
+          bkBal: 0,
+          log: [],
+        };
+        setD(defaultState);
       }
-    }
+    };
+
+    loadData();
   }, []);
 
   // Save to localstorage
