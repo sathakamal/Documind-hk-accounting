@@ -12,37 +12,43 @@ export async function POST() {
 
     const orgId = session.user.organizationId;
 
-    // 1. Delete records in correct order to respect foreign keys
-    // We use individual calls to avoid HTTP transaction limits
-    
-    // Payroll & Related
-    await prisma.payrollLine.deleteMany({ where: { payrollRun: { organizationId: orgId } } });
+    // 1. Fetch all parent IDs first to avoid relational filtering in deleteMany
+    // (Relational filtering can sometimes trigger implicit transactions)
+    const payrollRunIds = (await prisma.payrollRun.findMany({ where: { organizationId: orgId }, select: { id: true } })).map(r => r.id);
+    const invoiceIds = (await prisma.invoice.findMany({ where: { organizationId: orgId }, select: { id: true } })).map(i => i.id);
+    const billIds = (await prisma.bill.findMany({ where: { organizationId: orgId }, select: { id: true } })).map(b => b.id);
+    const journalEntryIds = (await prisma.journalEntry.findMany({ where: { organizationId: orgId }, select: { id: true } })).map(j => j.id);
+
+    // 2. Delete child records using flat ID lists
+    if (payrollRunIds.length > 0) {
+      await prisma.payrollLine.deleteMany({ where: { payrollRunId: { in: payrollRunIds } } });
+    }
+    if (invoiceIds.length > 0) {
+      await prisma.invoiceLine.deleteMany({ where: { invoiceId: { in: invoiceIds } } });
+    }
+    if (billIds.length > 0) {
+      await prisma.billLine.deleteMany({ where: { billId: { in: billIds } } });
+    }
+    if (journalEntryIds.length > 0) {
+      await prisma.journalLine.deleteMany({ where: { journalEntryId: { in: journalEntryIds } } });
+    }
+
+    // 3. Delete parent records
     await prisma.payrollRun.deleteMany({ where: { organizationId: orgId } });
-    
-    // AR (Receivables)
-    await prisma.invoiceLine.deleteMany({ where: { invoice: { organizationId: orgId } } });
     await prisma.invoice.deleteMany({ where: { organizationId: orgId } });
-    await prisma.customer.deleteMany({ where: { organizationId: orgId } });
-    
-    // AP (Payables)
-    await prisma.billLine.deleteMany({ where: { bill: { organizationId: orgId } } });
     await prisma.bill.deleteMany({ where: { organizationId: orgId } });
-    await prisma.vendor.deleteMany({ where: { organizationId: orgId } });
-    
-    // Double-Entry Accounting
-    await prisma.journalLine.deleteMany({ where: { journalEntry: { organizationId: orgId } } });
     await prisma.journalEntry.deleteMany({ where: { organizationId: orgId } });
-    
-    // Banking, Currencies & Documents
+
+    // 4. Delete standalone records
+    await prisma.customer.deleteMany({ where: { organizationId: orgId } });
+    await prisma.vendor.deleteMany({ where: { organizationId: orgId } });
     await prisma.bankTransaction.deleteMany({ where: { organizationId: orgId } });
     await prisma.document.deleteMany({ where: { organizationId: orgId } });
     await prisma.exchangeRate.deleteMany({ where: { organizationId: orgId } });
     await prisma.orgCurrency.deleteMany({ where: { organizationId: orgId, isBase: false } });
-    
-    // Master Data
     await prisma.employee.deleteMany({ where: { organizationId: orgId } });
-    
-    // Finally, accounts (reset balances to 0 instead of deleting, to keep basic setup)
+
+    // 5. Finally, reset account balances to 0
     await prisma.account.updateMany({
       where: { organizationId: orgId },
       data: { balance: 0 }
