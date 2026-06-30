@@ -244,7 +244,7 @@ function WorkspaceContent() {
                 nr: (a.type === "ASSET" || a.type === "EXPENSE") ? "Dr" : "Cr"
               }));
               dbState.accounts = [...dbAccs, ...defCOA.filter(defAcc => 
-                !dbAccs.some(dbAcc => dbAcc.c === defAcc.c)
+                !dbAccs.some((dbAcc: any) => dbAcc.c === defAcc.c)
               )].sort((a, b) => a.c.localeCompare(b.c));
             }
           }
@@ -314,14 +314,14 @@ function WorkspaceContent() {
               accounts: [
                 ...dbState.accounts,
                 ...(localState.accounts || []).filter((localAcc: any) => 
-                  !dbState.accounts.some(dbAcc => dbAcc.c === localAcc.c)
+                  !dbState.accounts.some((dbAcc: any) => dbAcc.c === localAcc.c)
                 )
               ].sort((a, b) => a.c.localeCompare(b.c)),
               // Merge journals: DB journals + local-only journals
               journals: [
                 ...dbState.journals,
                 ...(localState.journals || []).filter((localJour: any) => 
-                  !dbState.journals.some(dbJour => dbJour.id === localJour.id)
+                  !dbState.journals.some((dbJour: any) => dbJour.id === localJour.id)
                 )
               ],
               // Merge other arrays similarly
@@ -331,7 +331,7 @@ function WorkspaceContent() {
               employees: [
                 ...dbState.employees,
                 ...(localState.employees || []).filter((localEmp: any) => 
-                  !dbState.employees.some(dbEmp => dbEmp.id === localEmp.id)
+                  !dbState.employees.some((dbEmp: any) => dbEmp.id === localEmp.id)
                 )
               ],
               bkBal: localState.bkBal || dbState.bkBal,
