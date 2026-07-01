@@ -21,13 +21,11 @@ export default async function DashboardLayout({
       <Suspense fallback={<div className="p-6 text-white bg-[#0a1628] w-64 h-screen">Loading...</div>}>
         <Sidebar />
       </Suspense>
-      <div className="mn overflow-hidden">
+      <div className="mn">
         <Suspense fallback={<div className="h-16 bg-white border-b border-slate-200"></div>}>
           <Topbar />
         </Suspense>
-        <main className="flex-1 overflow-auto p-6">
-          {children}
-        </main>
+        <main className="ct">{children}</main>
       </div>
     </div>
   );

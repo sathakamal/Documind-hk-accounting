@@ -15,7 +15,13 @@ declare module "next-auth" {
 }
 
 export const authOptions: AuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(prisma, {
+    modelMapping: {
+      Account: "UserAccount",
+      Session: "UserSession",
+      VerificationToken: "UserVerificationToken",
+    },
+  }),
   providers: [
     CredentialsProvider({
       name: "Credentials",

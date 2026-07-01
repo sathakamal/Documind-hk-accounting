@@ -1,20 +1,16 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaNeonHttp } from "@prisma/adapter-neon";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import Database from "better-sqlite3";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 function createPrismaClient(): PrismaClient {
-  const connectionString = process.env.DATABASE_URL!;
-  // PrismaNeonHttp routes all DB queries over HTTPS (port 443).
-  // This bypasses firewall rules blocking direct TCP on port 5432.
-  const adapter = new PrismaNeonHttp(connectionString, { arrayMode: false, fullResults: true });
+  const db = new Database(process.env.DATABASE_URL!.replace("file:", ""));
+  const adapter = new PrismaBetterSqlite3(db);
 
   return new PrismaClient({
     adapter,
-    log:
-      process.env.NODE_ENV === "development"
-        ? ["error", "warn"]
-        : ["error"],
+    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 }
 

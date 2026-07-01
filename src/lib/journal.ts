@@ -20,7 +20,6 @@ export async function createJournalEntry(client: any, {
   date?: Date;
   lines: JournalLineInput[];
 }) {
-  // 1. Verify debits equal credits
   let totalDebit = new Decimal(0);
   let totalCredit = new Decimal(0);
   for (const line of lines) {
@@ -32,56 +31,55 @@ export async function createJournalEntry(client: any, {
     throw new Error(`Balanced entry violation: Debits (${totalDebit}) must equal Credits (${totalCredit})`);
   }
 
-  // 2. Create JournalEntry WITHOUT nested writes to avoid HTTP transaction limits
-  const entry = await prisma.journalEntry.create({
-    data: {
-      description,
-      reference,
-      organizationId,
-      date: date || new Date(),
-    },
-    select: { id: true }
-  });
-
-  // Create lines separately
-  for (const l of lines) {
-    await prisma.journalLine.create({
+  const result = await prisma.$transaction(async (tx) => {
+    const entry = await tx.journalEntry.create({
       data: {
-        accountId: l.accountId,
-        debit: new Decimal(l.debit),
-        credit: new Decimal(l.credit),
-        journalEntryId: entry.id,
+        description,
+        reference,
+        organizationId,
+        date: date || new Date(),
       },
       select: { id: true }
     });
-  }
 
-  // 3. Update account balances
-  for (const line of lines) {
-    const acc = await prisma.account.findUnique({
-      where: { id: line.accountId },
-      select: { id: true, balance: true, type: true }
-    });
-    if (!acc) throw new Error(`Account not found: ${line.accountId}`);
+    await Promise.all(lines.map(l =>
+      tx.journalLine.create({
+        data: {
+          accountId: l.accountId,
+          debit: new Decimal(l.debit),
+          credit: new Decimal(l.credit),
+          journalEntryId: entry.id,
+        },
+        select: { id: true }
+      })
+    ));
 
-    const debit = new Decimal(line.debit);
-    const credit = new Decimal(line.credit);
+    for (const line of lines) {
+      const acc = await tx.account.findUnique({
+        where: { id: line.accountId },
+        select: { id: true, balance: true, type: true }
+      });
+      if (!acc) throw new Error(`Account not found: ${line.accountId}`);
 
-    let newBalance = new Decimal(acc.balance);
-    if (acc.type === "ASSET" || acc.type === "EXPENSE") {
-      // Debit increases balance, Credit decreases balance
-      newBalance = newBalance.plus(debit).minus(credit);
-    } else {
-      // Credit increases balance, Debit decreases balance
-      newBalance = newBalance.plus(credit).minus(debit);
+      const debit = new Decimal(line.debit);
+      const credit = new Decimal(line.credit);
+
+      let newBalance = new Decimal(acc.balance);
+      if (acc.type === "ASSET" || acc.type === "EXPENSE") {
+        newBalance = newBalance.plus(debit).minus(credit);
+      } else {
+        newBalance = newBalance.plus(credit).minus(debit);
+      }
+
+      await tx.account.update({
+        where: { id: acc.id },
+        data: { balance: newBalance },
+        select: { id: true }
+      });
     }
 
-    await prisma.account.update({
-      where: { id: acc.id },
-      data: { balance: newBalance },
-      select: { id: true }
-    });
-  }
+    return entry;
+  });
 
-  return entry;
+  return result;
 }

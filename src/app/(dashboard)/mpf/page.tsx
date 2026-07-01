@@ -1,14 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Info } from "lucide-react";
 
 interface MPFCalculation {
   monthlySalary: number;
@@ -122,34 +118,21 @@ export default function MPFCalculatorPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">MPF Calculator</h1>
-          <p className="text-muted-foreground">
-            Hong Kong Mandatory Provident Fund Contribution Calculator
-          </p>
+    <div className="hk-page">
+      <div className="hk-card">
+        <div className="hk-card-h">
+          <h3>🔐 MPF Calculator</h3>
         </div>
-      </div>
 
-      <Alert className="bg-blue-50 border-blue-200">
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          <strong>MPF Rules (Cap. 485):</strong> Employee & Employer each contribute 5%. 
-          Minimum income: HK$7,100 (employee exempt below). Maximum: HK$30,000 (cap HK$1,500 each). 
-          Self-employed: 5% of declared income. Contributions due by 10th of following month.
-        </AlertDescription>
-      </Alert>
+        <div className="hk-alert hk-a-info">
+          <strong>MPF Rules:</strong> EE & ER each 5%. Min income: HK$7,100 (EE exempt below). Max: HK$30,000 (cap HK$1,500 each). Self-employed: 5% of declared income. Contributions are due by the 10th of the following month.
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>MPF Contribution Calculator</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="salary">Monthly Salary (HK$)</Label>
+        <div className="hk-grid hk-g2">
+          <div>
+            <div className="hk-fr hk-fr2">
+              <div className="hk-fg">
+                <Label htmlFor="salary">Monthly Salary</Label>
                 <Input
                   id="salary"
                   type="number"
@@ -157,176 +140,127 @@ export default function MPFCalculatorPage() {
                   onChange={(e) => setMonthlySalary(Number(e.target.value))}
                   min="0"
                   step="100"
+                  className="hk-input"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="employment-type">Employment Type</Label>
+              <div className="hk-fg">
+                <Label htmlFor="employment-type">Type</Label>
                 <Select
                   value={employmentType}
                   onValueChange={(value: "employed" | "self-employed" | "exempt") => setEmploymentType(value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="employment-type" className="hk-input">
                     <SelectValue placeholder="Select employment type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="employed">Employed</SelectItem>
                     <SelectItem value="self-employed">Self-Employed</SelectItem>
-                    <SelectItem value="exempt">Exempt Employee</SelectItem>
+                    <SelectItem value="exempt">Exempt</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             {calculation && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <div className="text-sm text-muted-foreground">Employee Contribution</div>
-                    <div className="text-2xl font-bold mt-1">{formatCurrency(calculation.employeeContribution)}</div>
-                    <div className="text-xs text-muted-foreground mt-1">5% of relevant income</div>
-                  </div>
-                  
-                  <div className="p-4 border rounded-lg">
-                    <div className="text-sm text-muted-foreground">Employer Contribution</div>
-                    <div className="text-2xl font-bold mt-1">{formatCurrency(calculation.employerContribution)}</div>
-                    <div className="text-xs text-muted-foreground mt-1">5% of relevant income</div>
-                  </div>
-                </div>
+              <div style={{ background: "var(--gray)", padding: "14px", borderRadius: "8px", marginTop: "10px" }}>
+                <table className="hk-table">
+                  <tbody>
+                    <tr>
+                      <td>Monthly Gross Salary</td>
+                      <td className="hk-nm">{formatCurrency(calculation.monthlySalary)}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ color: "var(--red)" }}>Employee MPF Contribution (5%)</td>
+                      <td className="hk-nm" style={{ color: "var(--red)" }}>
+                        {formatCurrency(calculation.employeeContribution)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ color: "var(--orange)" }}>Employer MPF Contribution (5%)</td>
+                      <td className="hk-nm" style={{ color: "var(--orange)" }}>
+                        {formatCurrency(calculation.employerContribution)}
+                      </td>
+                    </tr>
+                    <tr style={{ borderTop: "2px solid var(--border)", fontWeight: 700 }}>
+                      <td>Total Monthly Contribution</td>
+                      <td className="hk-nm" style={{ color: "var(--navy)" }}>
+                        {formatCurrency(calculation.totalContribution)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Annual Total</td>
+                      <td className="hk-nm">{formatCurrency(calculation.totalContribution * 12)}</td>
+                    </tr>
+                  </tbody>
+                </table>
 
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="text-sm text-muted-foreground">Total Monthly Contribution</div>
-                  <div className="text-3xl font-bold mt-1 text-blue-700">
-                    {formatCurrency(calculation.totalContribution)}
-                  </div>
-                  <div className="text-sm text-blue-600 mt-2">
-                    {calculation.exemptBelowThreshold && (
-                      <Badge className="bg-yellow-100 text-yellow-800">Employee exempt below HK$7,100</Badge>
-                    )}
-                    {calculation.statutoryCapApplied && (
-                      <Badge className="bg-green-100 text-green-800">Statutory cap HK$1,500 applied</Badge>
-                    )}
-                  </div>
-                </div>
-
-                <div className="text-sm text-muted-foreground">
-                  <strong>Annual Total:</strong> {formatCurrency(calculation.totalContribution * 12)}
+                <div className="flex gap-2 flex-wrap mt-3">
+                  {calculation.exemptBelowThreshold && (
+                    <Badge className="hk-badge hk-b-orange">Employee exempt below HK$7,100</Badge>
+                  )}
+                  {calculation.statutoryCapApplied && (
+                    <Badge className="hk-badge hk-b-green">Statutory cap HK$1,500 applied</Badge>
+                  )}
+                  {employmentType === "self-employed" && (
+                    <Badge className="hk-badge hk-b-blue">Self-employed contribution basis</Badge>
+                  )}
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>MPF Contribution Scale</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Monthly Income</TableHead>
-                    <TableHead className="text-right">Employee (5%)</TableHead>
-                    <TableHead className="text-right">Employer (5%)</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {examples.map((example, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{formatCurrency(example.salary)}</TableCell>
-                      <TableCell className="text-right font-mono">{formatCurrency(example.ee)}</TableCell>
-                      <TableCell className="text-right font-mono">{formatCurrency(example.er)}</TableCell>
-                      <TableCell className="text-right font-mono font-bold">
-                        {formatCurrency(example.total)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-semibold mb-2">Key MPF Regulations:</h3>
-              <ul className="text-sm space-y-1">
-                <li>• <strong>Mandatory Participation:</strong> All employees aged 18-65 with 60+ days employment</li>
-                <li>• <strong>Contribution Period:</strong> 1st to last day of each month</li>
-                <li>• <strong>Payment Deadline:</strong> 10th day of following month</li>
-                <li>• <strong>Penalties:</strong> Late payment: 5% surcharge + HK$450 fixed penalty</li>
-                <li>• <strong>Exemptions:</strong> Domestic helpers, certain part-time (&lt; 60 days), self-employed (voluntary)</li>
-                <li>• <strong>Tax Deductible:</strong> Employee contributions deductible up to HK$18,000 annually</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
+          <div style={{ background: "var(--gray)", padding: "14px", borderRadius: "8px" }}>
+            <h4 style={{ fontSize: ".82rem", color: "var(--navy)", marginBottom: "8px" }}>MPF Scale</h4>
+            <table className="hk-table">
+              <thead>
+                <tr>
+                  <th>Income</th>
+                  <th>EE</th>
+                  <th>ER</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {examples.map((example, index) => (
+                  <tr key={index}>
+                    <td>{formatCurrency(example.salary)}</td>
+                    <td className="hk-nm">{formatCurrency(example.ee)}</td>
+                    <td className="hk-nm">{formatCurrency(example.er)}</td>
+                    <td className="hk-nm" style={{ fontWeight: 700 }}>{formatCurrency(example.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>MPF Scheme Types & Investment Options</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-blue-600">💰</span>
-                </div>
-                <h3 className="font-semibold">Conservative Fund</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Capital preservation focus, low risk, suitable for near-retirement members
-              </p>
-              <div className="mt-3 text-xs">
-                <Badge className="bg-blue-100 text-blue-800">Avg Return: 2-3%</Badge>
-              </div>
-            </div>
-
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <span className="text-green-600">📈</span>
-                </div>
-                <h3 className="font-semibold">Balanced Fund</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Mix of equities and bonds, moderate risk, suitable for mid-career members
-              </p>
-              <div className="mt-3 text-xs">
-                <Badge className="bg-green-100 text-green-800">Avg Return: 4-6%</Badge>
-              </div>
-            </div>
-
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                  <span className="text-orange-600">🚀</span>
-                </div>
-                <h3 className="font-semibold">Growth Fund</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Equity-focused, higher risk, suitable for young members with long investment horizon
-              </p>
-              <div className="mt-3 text-xs">
-                <Badge className="bg-orange-100 text-orange-800">Avg Return: 6-8%</Badge>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h3 className="font-semibold mb-2">Important Compliance Notes:</h3>
-            <ul className="text-sm space-y-1">
-              <li>• <strong>MPF Authority (MPFA):</strong> Regulatory body overseeing compliance</li>
-              <li>• <strong>Record Keeping:</strong> Must maintain contribution records for 7 years</li>
-              <li>• <strong>Annual Statement:</strong> Must provide annual benefit statement to employees</li>
-              <li>• <strong>Scheme Transfer:</strong> Employees can transfer accumulated benefits between schemes</li>
-              <li>• <strong>Early Withdrawal:</strong> Only permitted for specific circumstances (retirement, permanent departure, etc.)</li>
-              <li>• <strong>Default Investment Strategy (DIS):</strong> Automatic investment option if no choice made</li>
+      <div className="hk-card">
+        <div className="hk-card-h">
+          <h3>📋 MPF Compliance Notes</h3>
+        </div>
+        <div className="hk-grid hk-g2">
+          <div className="hk-notes-box">
+            <h4>Key Regulations</h4>
+            <ul>
+              <li>Mandatory participation usually applies to employees aged 18 to 65 with 60+ days employment.</li>
+              <li>Contribution period runs from the 1st to the last day of each month.</li>
+              <li>Payment deadline is the 10th day of the following month.</li>
+              <li>Employee mandatory contributions are tax deductible up to the statutory annual ceiling.</li>
             </ul>
           </div>
-        </CardContent>
-      </Card>
+          <div className="hk-notes-box">
+            <h4>Operational Reminders</h4>
+            <ul>
+              <li>Keep contribution and remittance records for at least 7 years.</li>
+              <li>Late payment may trigger surcharge, penalties, and trustee follow-up.</li>
+              <li>Exempt cases should be documented clearly in the employee file.</li>
+              <li>Annual benefit statements should match payroll and trustee records.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

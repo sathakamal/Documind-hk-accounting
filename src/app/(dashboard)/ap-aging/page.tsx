@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 
 interface Bill {
   id: number;
@@ -23,7 +22,6 @@ interface AgingStats {
 }
 
 export default function APAgingPage() {
-  const searchParams = useSearchParams();
   const [bills, setBills] = useState<Bill[]>([]);
   const [agingStats, setAgingStats] = useState<AgingStats>({
     current: 0,
@@ -123,10 +121,10 @@ export default function APAgingPage() {
 
   // Get status badge color
   const getStatusBadge = (daysDiff: number) => {
-    if (daysDiff <= 0) return "bg-green-100 text-green-800";
-    if (daysDiff <= 30) return "bg-yellow-100 text-yellow-800";
-    if (daysDiff <= 60) return "bg-orange-100 text-orange-800";
-    return "bg-red-100 text-red-800";
+    if (daysDiff <= 0) return "hk-badge hk-b-green";
+    if (daysDiff <= 30) return "hk-badge hk-b-gold";
+    if (daysDiff <= 60) return "hk-badge hk-b-orange";
+    return "hk-badge hk-b-red";
   };
 
   // Calculate potential late payment penalties
@@ -146,242 +144,122 @@ export default function APAgingPage() {
   };
 
   const latePenalties = calculateLatePenalties();
+  const outstandingBills = bills.filter(bill => bill.st !== "Paid");
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">🕐 AP Aging Report</h1>
-        <p className="text-gray-600 mt-1">Accounts Payable aging analysis with supplier payment risk assessment</p>
-      </div>
-
-      {/* Aging Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-sm font-medium text-gray-500">Current</div>
-          <div className="mt-1 text-2xl font-semibold text-green-600">
-            {formatCurrency(agingStats.current)}
-          </div>
-          <div className="mt-2 text-xs text-gray-500">
-            {agingStats.total > 0 ? `${((agingStats.current / agingStats.total) * 100).toFixed(1)}% of total` : "No outstanding"}
-          </div>
+    <div className="hk-page">
+      <div className="hk-card">
+        <div className="hk-card-h">
+          <h3>🕐 AP Aging Report</h3>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-sm font-medium text-gray-500">31-60 Days</div>
-          <div className="mt-1 text-2xl font-semibold text-orange-600">
-            {formatCurrency(agingStats.days31to60)}
-          </div>
-          <div className="mt-2 text-xs text-gray-500">
-            2% penalty: {formatCurrency(agingStats.days31to60 * 0.02)}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-sm font-medium text-gray-500">61-90 Days</div>
-          <div className="mt-1 text-2xl font-semibold text-red-600">
-            {formatCurrency(agingStats.days61to90)}
-          </div>
-          <div className="mt-2 text-xs text-gray-500">
-            5% penalty: {formatCurrency(agingStats.days61to90 * 0.05)}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-sm font-medium text-gray-500">Over 90 Days</div>
-          <div className="mt-1 text-2xl font-semibold text-red-800">
-            {formatCurrency(agingStats.over90)}
-          </div>
-          <div className="mt-2 text-xs text-gray-500">
-            10% penalty: {formatCurrency(agingStats.over90 * 0.10)}
-          </div>
-        </div>
-      </div>
-
-      {/* Late Payment Risk Assessment */}
-      <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-red-900 mb-2">Late Payment Risk Assessment</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <div className="text-sm text-red-700 mb-1">Total Outstanding Payables:</div>
-            <div className="text-xl font-bold text-red-900">{formatCurrency(agingStats.total)}</div>
-          </div>
-          <div>
-            <div className="text-sm text-red-700 mb-1">Potential Late Payment Penalties:</div>
-            <div className="text-xl font-bold text-red-600">{formatCurrency(latePenalties)}</div>
-            <div className="text-xs text-red-600 mt-1">
-              ({((latePenalties / agingStats.total) * 100).toFixed(2)}% of outstanding)
+        <div className="hk-grid hk-g4" style={{ marginBottom: "14px" }}>
+          <div className="hk-stat" style={{ "--c": "var(--green)" } as React.CSSProperties}>
+            <div className="lb">Current</div>
+            <div className="vl">{formatCurrency(agingStats.current)}</div>
+            <div className="sub">
+              {agingStats.total > 0 ? `${((agingStats.current / agingStats.total) * 100).toFixed(1)}% of total` : "No outstanding"}
             </div>
           </div>
-        </div>
-        <div className="mt-3 text-sm text-red-700">
-          <p>
-            <strong>Risk Factors:</strong> Late payments can damage supplier relationships, 
-            affect credit ratings, and lead to supply chain disruptions. 
-            Consider prioritizing payments to critical suppliers.
-          </p>
-        </div>
-      </div>
-
-      {/* Aging Report Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-900">Aging Analysis Details</h2>
-            <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-              Export CSV
-            </button>
+          <div className="hk-stat" style={{ "--c": "var(--gold)" } as React.CSSProperties}>
+            <div className="lb">31-60 Days</div>
+            <div className="vl">{formatCurrency(agingStats.days31to60)}</div>
+            <div className="sub">2% penalty: {formatCurrency(agingStats.days31to60 * 0.02)}</div>
+          </div>
+          <div className="hk-stat" style={{ "--c": "var(--orange)" } as React.CSSProperties}>
+            <div className="lb">61-90 Days</div>
+            <div className="vl">{formatCurrency(agingStats.days61to90)}</div>
+            <div className="sub">5% penalty: {formatCurrency(agingStats.days61to90 * 0.05)}</div>
+          </div>
+          <div className="hk-stat" style={{ "--c": "var(--red)" } as React.CSSProperties}>
+            <div className="lb">{">90 Days"}</div>
+            <div className="vl">{formatCurrency(agingStats.over90)}</div>
+            <div className="sub">10% penalty: {formatCurrency(agingStats.over90 * 0.10)}</div>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="hk-alert hk-a-err">
+          <strong>Total Outstanding Payables:</strong> {formatCurrency(agingStats.total)} | <strong>Potential Late Payment Penalties:</strong> {formatCurrency(latePenalties)}
+          <br />
+          Late payment can damage supplier relationships, affect credit ratings, and disrupt the supply chain.
+        </div>
+
+        <div className="hk-tw">
+          <table className="hk-table">
+            <thead>
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Vendor
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Bill #
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Due Date
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Current
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  31-60
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  61-90
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  &gt;90
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
+                <th>Vendor</th>
+                <th>Bill#</th>
+                <th>Date</th>
+                <th>Due</th>
+                <th className="hk-nm">Total</th>
+                <th className="hk-nm">Current</th>
+                <th className="hk-nm">31-60</th>
+                <th className="hk-nm">61-90</th>
+                <th className="hk-nm">{">90"}</th>
+                <th>Status</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {bills.filter(bill => bill.st !== "Paid").length === 0 ? (
+            <tbody>
+              {outstandingBills.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={10} className="text-center text-muted-foreground py-8">
                     No outstanding bills
                   </td>
                 </tr>
               ) : (
-                bills
-                  .filter(bill => bill.st !== "Paid")
-                  .map((bill) => {
-                    const balance = bill.amt - (bill.pd || 0);
-                    const agingBucket = getAgingBucket(bill.due);
-                    const daysDiff = daysBetween(bill.due, new Date().toISOString().split('T')[0]);
-                    
-                    return (
-                      <tr key={bill.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {bill.vend}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {bill.num}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {bill.dt}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {bill.due}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                          {formatCurrency(bill.amt)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {agingBucket === "Current" ? formatCurrency(balance) : ""}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {agingBucket === "31-60" ? formatCurrency(balance) : ""}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {agingBucket === "61-90" ? formatCurrency(balance) : ""}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {agingBucket === ">90" ? formatCurrency(balance) : ""}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(daysDiff)}`}>
-                            {daysDiff <= 0 ? "Current" : `${daysDiff}d`}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })
+                outstandingBills.map((bill) => {
+                  const balance = bill.amt - (bill.pd || 0);
+                  const agingBucket = getAgingBucket(bill.due);
+                  const daysDiff = daysBetween(bill.due, new Date().toISOString().split("T")[0]);
+
+                  return (
+                    <tr key={bill.id}>
+                      <td>{bill.vend}</td>
+                      <td>{bill.num}</td>
+                      <td>{bill.dt}</td>
+                      <td>{bill.due}</td>
+                      <td className="hk-nm">{formatCurrency(bill.amt)}</td>
+                      <td className="hk-nm">{agingBucket === "Current" ? formatCurrency(balance) : ""}</td>
+                      <td className="hk-nm">{agingBucket === "31-60" ? formatCurrency(balance) : ""}</td>
+                      <td className="hk-nm">{agingBucket === "61-90" ? formatCurrency(balance) : ""}</td>
+                      <td className="hk-nm">{agingBucket === ">90" ? formatCurrency(balance) : ""}</td>
+                      <td>
+                        <span className={getStatusBadge(daysDiff)}>
+                          {daysDiff <= 0 ? "Current" : `${daysDiff}d`}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
-            <tfoot className="bg-gray-50">
-              <tr>
-                <td colSpan={4} className="px-6 py-3 text-sm font-medium text-gray-900">
-                  <strong>TOTALS</strong>
-                </td>
-                <td className="px-6 py-3 text-sm font-medium text-gray-900">
-                  {formatCurrency(bills.filter(bill => bill.st !== "Paid").reduce((sum, bill) => sum + bill.amt, 0))}
-                </td>
-                <td className="px-6 py-3 text-sm font-medium text-green-600">
-                  {formatCurrency(agingStats.current)}
-                </td>
-                <td className="px-6 py-3 text-sm font-medium text-orange-600">
-                  {formatCurrency(agingStats.days31to60)}
-                </td>
-                <td className="px-6 py-3 text-sm font-medium text-red-600">
-                  {formatCurrency(agingStats.days61to90)}
-                </td>
-                <td className="px-6 py-3 text-sm font-medium text-red-800">
-                  {formatCurrency(agingStats.over90)}
-                </td>
-                <td className="px-6 py-3"></td>
-              </tr>
-            </tfoot>
           </table>
         </div>
-      </div>
 
-      {/* Payment Prioritization Recommendations */}
-      <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-gray-900 mb-2">Payment Prioritization Recommendations</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg p-3 border border-blue-100">
-            <div className="text-xs font-medium text-blue-700 mb-1">High Priority (&gt;90 days)</div>
-            <div className="text-lg font-bold text-red-700">{formatCurrency(agingStats.over90)}</div>
-            <div className="text-xs text-gray-600 mt-1">Immediate payment to avoid legal action</div>
+        <div className="hk-grid hk-g3" style={{ marginTop: "14px" }}>
+          <div className="hk-notes-box">
+            <h4>High Priority</h4>
+            <ul>
+              <li>{">90 days"}: {formatCurrency(agingStats.over90)}</li>
+              <li>Immediate payment to avoid legal action and supply stoppage.</li>
+            </ul>
           </div>
-          <div className="bg-white rounded-lg p-3 border border-blue-100">
-            <div className="text-xs font-medium text-blue-700 mb-1">Medium Priority (61-90 days)</div>
-            <div className="text-lg font-bold text-orange-600">{formatCurrency(agingStats.days61to90)}</div>
-            <div className="text-xs text-gray-600 mt-1">Schedule within 1-2 weeks</div>
+          <div className="hk-notes-box">
+            <h4>Medium Priority</h4>
+            <ul>
+              <li>61-90 days: {formatCurrency(agingStats.days61to90)}</li>
+              <li>Schedule for settlement within 1-2 weeks.</li>
+            </ul>
           </div>
-          <div className="bg-white rounded-lg p-3 border border-blue-100">
-            <div className="text-xs font-medium text-blue-700 mb-1">Low Priority (31-60 days)</div>
-            <div className="text-lg font-bold text-yellow-600">{formatCurrency(agingStats.days31to60)}</div>
-            <div className="text-xs text-gray-600 mt-1">Schedule within 30 days</div>
+          <div className="hk-notes-box">
+            <h4>Low Priority</h4>
+            <ul>
+              <li>31-60 days: {formatCurrency(agingStats.days31to60)}</li>
+              <li>Plan payment within normal creditor cycle.</li>
+            </ul>
           </div>
         </div>
-      </div>
-
-      {/* Supplier Relationship Management Notes */}
-      <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-gray-900 mb-2">Supplier Relationship Management</h3>
-        <ul className="text-sm text-gray-600 space-y-1">
-          <li>• Maintain open communication with suppliers regarding payment timelines</li>
-          <li>• Consider early payment discounts where available (typically 2% for payment within 10 days)</li>
-          <li>• Monitor supplier performance and payment terms regularly</li>
-          <li>• Establish a payment approval workflow to ensure timely processing</li>
-          <li>• Keep accurate records of all payment commitments and actual payments</li>
-        </ul>
       </div>
     </div>
   );

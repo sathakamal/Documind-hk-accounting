@@ -1,11 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
 
 interface FixedAsset {
   id: string;
@@ -172,167 +167,108 @@ export default function DepreciationSchedulePage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Depreciation Schedule</h1>
-          <p className="text-muted-foreground">
-            Book vs Tax Depreciation Comparison
-          </p>
+    <div className="hk-page">
+      <div className="hk-card">
+        <div className="hk-card-h">
+          <h3>📉 Depreciation: Book vs Tax</h3>
+        </div>
+
+        <div className="hk-alert hk-a-info">
+          HK IRD Pooling Rules: Pool A (30% - computers/electronics), Pool B (20% - vehicles/furniture), Pool C (10% - buildings). Timing differences between book depreciation and tax allowances may create deferred tax balances.
+        </div>
+
+        <div className="hk-grid hk-g2" style={{ marginBottom: "14px" }}>
+          <div className="hk-stat" style={{ "--c": "var(--blue)" } as React.CSSProperties}>
+            <div className="lb">Book Depreciation/yr</div>
+            <div className="vl">{formatCurrency(totalBookDepreciation)}</div>
+          </div>
+          <div className="hk-stat" style={{ "--c": "var(--purple)" } as React.CSSProperties}>
+            <div className="lb">IRD Tax Allowances/yr</div>
+            <div className="vl">{formatCurrency(totalTaxAllowances)}</div>
+          </div>
+        </div>
+
+        <div className="hk-tw">
+          <table className="hk-table">
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th className="hk-nm">Cost</th>
+                <th className="hk-nm">Life</th>
+                <th className="hk-nm">Book Depr/yr</th>
+                <th className="hk-nm">Acc.Depr</th>
+                <th className="hk-nm">Book WDV</th>
+                <th>Pool</th>
+                <th className="hk-nm">Init.Allow</th>
+                <th className="hk-nm">Ann.Allow</th>
+                <th className="hk-nm">Tax WDV</th>
+                <th className="hk-nm">Timing Diff</th>
+              </tr>
+            </thead>
+            <tbody>
+              {schedule.map((item, index) => (
+                <tr key={index}>
+                  <td>{item.assetName}</td>
+                  <td className="hk-nm">{formatCurrency(item.cost)}</td>
+                  <td className="hk-nm">{item.usefulLife}</td>
+                  <td className="hk-nm">{formatCurrency(item.bookDepreciationPerYear)}</td>
+                  <td className="hk-nm">{formatCurrency(item.accumulatedDepreciation)}</td>
+                  <td className="hk-nm">{formatCurrency(item.bookWDV)}</td>
+                  <td>
+                    <span className={`hk-badge ${
+                      item.pool === "A" ? "hk-b-blue" :
+                      item.pool === "B" ? "hk-b-green" :
+                      "hk-b-purple"
+                    }`}>
+                      Pool {item.pool} ({item.pool === "A" ? "30%" : item.pool === "B" ? "20%" : "10%"})
+                    </span>
+                  </td>
+                  <td className="hk-nm">{formatCurrency(item.initialAllowance)}</td>
+                  <td className="hk-nm">{formatCurrency(item.annualAllowance)}</td>
+                  <td className="hk-nm">{formatCurrency(item.taxWDV)}</td>
+                  <td className="hk-nm" style={{ color: item.timingDifference > 0 ? "var(--green)" : "var(--red)" }}>
+                    {formatCurrency(item.timingDifference)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <Alert className="bg-blue-50 border-blue-200">
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          <strong>HK IRD Pooling Rules:</strong> Pool A (30% – computers/electronics), Pool B (20% – vehicles/furniture), Pool C (10% – buildings). 
-          Initial allowance = 60% for qualifying plant/machinery purchased on or after specific dates (standard 20%). 
-          Timing differences create deferred tax assets/liabilities.
-        </AlertDescription>
-      </Alert>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="text-blue-600">📊</span>
-              Book Depreciation (Annual)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{formatCurrency(totalBookDepreciation)}</div>
-            <p className="text-sm text-muted-foreground mt-2">
-              Straight-line method over useful life
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="text-purple-600">🧾</span>
-              IRD Tax Allowances (Annual)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{formatCurrency(totalTaxAllowances)}</div>
-            <p className="text-sm text-muted-foreground mt-2">
-              Reducing balance method per IRD pools
-            </p>
-          </CardContent>
-        </Card>
+      <div className="hk-grid hk-g3">
+        <div className="hk-notes-box">
+          <h4>Pool A (30%)</h4>
+          <ul>
+            <li>Computers, printers, software, telecommunications equipment.</li>
+            <li>{formatCurrency(schedule.filter(s => s.pool === "A").reduce((sum, s) => sum + s.cost, 0))}</li>
+          </ul>
+        </div>
+        <div className="hk-notes-box">
+          <h4>Pool B (20%)</h4>
+          <ul>
+            <li>Motor vehicles, furniture, fixtures, plant & machinery.</li>
+            <li>{formatCurrency(schedule.filter(s => s.pool === "B").reduce((sum, s) => sum + s.cost, 0))}</li>
+          </ul>
+        </div>
+        <div className="hk-notes-box">
+          <h4>Pool C (10%)</h4>
+          <ul>
+            <li>Buildings, structural improvements, leasehold improvements.</li>
+            <li>{formatCurrency(schedule.filter(s => s.pool === "C").reduce((sum, s) => sum + s.cost, 0))}</li>
+          </ul>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Depreciation Schedule: Book vs Tax Comparison</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Asset</TableHead>
-                  <TableHead className="text-right">Cost</TableHead>
-                  <TableHead className="text-right">Life (yrs)</TableHead>
-                  <TableHead className="text-right">Book Depr/yr</TableHead>
-                  <TableHead className="text-right">Acc. Depr</TableHead>
-                  <TableHead className="text-right">Book WDV</TableHead>
-                  <TableHead>Pool</TableHead>
-                  <TableHead className="text-right">Init. Allow</TableHead>
-                  <TableHead className="text-right">Ann. Allow</TableHead>
-                  <TableHead className="text-right">Tax WDV</TableHead>
-                  <TableHead className="text-right">Timing Diff</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {schedule.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{item.assetName}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(item.cost)}</TableCell>
-                    <TableCell className="text-right">{item.usefulLife}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(item.bookDepreciationPerYear)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(item.accumulatedDepreciation)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(item.bookWDV)}</TableCell>
-                    <TableCell>
-                      <Badge className={getPoolColor(item.pool)}>
-                        Pool {item.pool} ({item.pool === "A" ? "30%" : item.pool === "B" ? "20%" : "10%"})
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(item.initialAllowance)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(item.annualAllowance)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(item.taxWDV)}</TableCell>
-                    <TableCell className="text-right font-mono">
-                      <span className={item.timingDifference > 0 ? "text-green-600" : "text-red-600"}>
-                        {formatCurrency(item.timingDifference)}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="font-semibold mb-2">HK Accounting Implications:</h3>
-            <ul className="text-sm space-y-1">
-              <li>• <strong>Timing Differences:</strong> When book depreciation ≠ tax allowances, deferred tax assets/liabilities arise</li>
-              <li>• <strong>Deferred Tax:</strong> Timing differences multiplied by tax rate (16.5% for corporations)</li>
-              <li>• <strong>Tax Base:</strong> Tax WDV is used for future tax allowance calculations</li>
-              <li>• <strong>Disposal:</strong> Balancing charge/allowance on disposal when proceeds ≠ tax WDV</li>
-              <li>• <strong>Compliance:</strong> Must maintain separate book and tax records for 7 years (Cap. 622)</li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>IRD Pool Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold">Pool A (30%)</h3>
-                <Badge className="bg-blue-100 text-blue-800">Computers & Electronics</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Computers, printers, software, telecommunications equipment
-              </p>
-              <div className="mt-2 text-lg font-semibold">
-                {formatCurrency(schedule.filter(s => s.pool === "A").reduce((sum, s) => sum + s.cost, 0))}
-              </div>
-            </div>
-
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold">Pool B (20%)</h3>
-                <Badge className="bg-green-100 text-green-800">Vehicles & Furniture</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Motor vehicles, furniture, fixtures, plant & machinery
-              </p>
-              <div className="mt-2 text-lg font-semibold">
-                {formatCurrency(schedule.filter(s => s.pool === "B").reduce((sum, s) => sum + s.cost, 0))}
-              </div>
-            </div>
-
-            <div className="p-4 border rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold">Pool C (10%)</h3>
-                <Badge className="bg-purple-100 text-purple-800">Buildings</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Buildings, structural improvements, leasehold improvements
-              </p>
-              <div className="mt-2 text-lg font-semibold">
-                {formatCurrency(schedule.filter(s => s.pool === "C").reduce((sum, s) => sum + s.cost, 0))}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="hk-notes-box">
+        <h4>HK Accounting Implications</h4>
+        <ul>
+          <li>Timing differences arise when book depreciation does not match tax allowances.</li>
+          <li>Deferred tax is measured using the relevant profits tax rate.</li>
+          <li>Tax WDV is the basis for future tax allowance calculations.</li>
+          <li>Separate book and tax records should be retained for at least 7 years.</li>
+        </ul>
+      </div>
     </div>
   );
 }

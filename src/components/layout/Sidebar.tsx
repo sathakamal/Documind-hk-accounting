@@ -7,9 +7,6 @@ export function Sidebar() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const currentTab = searchParams.get("tab") || "dash";
-
-  // Check if we're on a standalone route (not /dashboard)
-  const isStandalonePage = pathname !== "/dashboard" && pathname !== "/";
   const isDocuments = pathname === "/documents";
   const isUpload = pathname === "/upload";
 
@@ -18,14 +15,14 @@ export function Sidebar() {
       name: "Overview",
       items: [
         { id: "dash", label: "Dashboard", ico: "📊", href: "/dashboard" },
-        { id: "framework", label: "Framework Selector", ico: "📏", href: "/dashboard?tab=framework", badge: "HK" },
+        { id: "framework", label: "Framework Selector", ico: "📏", href: "/dashboard?tab=framework", badge: "NEW" },
       ],
     },
     {
       name: "Core Accounting",
       items: [
         { id: "coa", label: "Chart of Accounts", ico: "📋", href: "/accounts" },
-        { id: "journal", label: "Journal Entries", ico: "📝" },
+        { id: "journal", label: "Journal Entries", ico: "📝", href: "/dashboard?tab=journal" },
         { id: "ledger", label: "General Ledger", ico: "📒", href: "/ledger" },
         { id: "bank", label: "Bank Reconciliation", ico: "🏦", href: "/reconciliation" },
       ],
@@ -33,8 +30,10 @@ export function Sidebar() {
     {
       name: "Receivables & Payables",
       items: [
-        { id: "ar", label: "Accounts Receivable", ico: "💰", href: "/customers" },
-        { id: "ap", label: "Accounts Payable", ico: "💳", href: "/vendors" },
+        { id: "ar", label: "Accounts Receivable", ico: "💰", href: "/dashboard?tab=ar" },
+        { id: "ar-aging", label: "AR Aging Report", ico: "⏳", href: "/ar-aging" },
+        { id: "ap", label: "Accounts Payable", ico: "💳", href: "/dashboard?tab=ap" },
+        { id: "ap-aging", label: "AP Aging Report", ico: "🕐", href: "/ap-aging" },
       ],
     },
     {
@@ -49,9 +48,9 @@ export function Sidebar() {
       items: [
         { id: "emp", label: "Employee Records", ico: "👥", href: "/employees" },
         { id: "payroll", label: "Payroll Processing", ico: "💵", href: "/payroll" },
+        { id: "mpf", label: "MPF Calculator", ico: "🔐", href: "/mpf" },
+        { id: "ir56b", label: "IR56B Generator", ico: "📄", href: "/ir56b" },
         { id: "payroll-history", label: "Payroll History", ico: "📜", href: "/payroll-history" },
-        { id: "mpf", label: "MPF Calculator", ico: "🏦", href: "/mpf" },
-        { id: "ir56b", label: "IR56B Generator", ico: "📋", href: "/ir56b", badge: "HK" },
       ],
     },
     {
@@ -70,37 +69,63 @@ export function Sidebar() {
         { id: "bs", label: "Balance Sheet", ico: "🗂", href: "/reports" },
         { id: "cf", label: "Cash Flow Statement", ico: "💧", href: "/reports" },
         { id: "eq", label: "Changes in Equity", ico: "🔄", href: "/reports" },
-        { id: "notes", label: "Notes to Accounts", ico: "📑", href: "/reports", badge: "HK" },
+        { id: "notes", label: "Notes to Accounts", ico: "📑", href: "/reports", badge: "NEW" },
       ],
     },
     {
       name: "Compliance & Admin",
       items: [
-        { id: "compliance", label: "Compliance Center", ico: "✅", href: "/compliance", badge: "HK" },
+        { id: "compliance", label: "Compliance Center", ico: "✅", href: "/compliance", badge: "NEW" },
         { id: "audit", label: "Audit Trail", ico: "🔍", href: "/audit" },
-        { id: "deadlines", label: "HK Deadlines", ico: "📅", href: "/deadlines", badge: "NEW" },
-        { id: "ar-aging", label: "AR Aging Report", ico: "⏳", href: "/ar-aging" },
-        { id: "ap-aging", label: "AP Aging Report", ico: "🕐", href: "/ap-aging" },
+        { id: "deadlines", label: "HK Deadlines", ico: "📅", href: "/deadlines" },
         { id: "settings", label: "Settings", ico: "⚙", href: "/settings" },
       ],
     },
   ];
 
+  const isActiveItem = (item: { id: string; href: string }) => {
+    if (item.href.startsWith("/dashboard?tab=")) {
+      return pathname === "/dashboard" && currentTab === item.id;
+    }
+
+    if (item.href === "/dashboard") {
+      return pathname === "/dashboard" && currentTab === "dash";
+    }
+
+    if (item.href === "/reports") {
+      return pathname === "/reports";
+    }
+
+    return pathname === item.href;
+  };
+
   return (
-    <aside className="sb" id="sb" style={{
-      width: "var(--sw)",
-      background: "linear-gradient(180deg, var(--navy), var(--navy2))",
-      color: "#fff",
-      height: "100vh",
-      overflowY: "auto",
-      flexShrink: 0,
-    }}>
+    <aside className="sb" id="sb" style={{ flexShrink: 0 }}>
       <div className="sb-logo">
         <h1 style={{ fontSize: "1rem", fontWeight: "bold" }}>🏛 HK Accounting Pro</h1>
         <small>HKFRS · IRD · Cap.622 Compliant</small>
       </div>
 
-      {/* ── Document Hub section (standalone routes) ── */}
+      {groups.map((grp) => (
+        <div key={grp.name}>
+          <div className="sb-grp">{grp.name}</div>
+          {grp.items.map((item) => {
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`sb-item ${isActiveItem(item) ? "active" : ""}`}
+                style={{ textDecoration: "none" }}
+              >
+                <span className="ico">{item.ico}</span>
+                {item.label}
+                {item.badge && <span className="sb-badge">{item.badge}</span>}
+              </Link>
+            );
+          })}
+        </div>
+      ))}
+
       <div>
         <div className="sb-grp">Document Hub</div>
         <Link
@@ -108,46 +133,19 @@ export function Sidebar() {
           className={`sb-item ${isDocuments ? "active" : ""}`}
           style={{ textDecoration: "none" }}
         >
-          <span className="ico" style={{ marginRight: "0.5rem" }}>📥</span>
+          <span className="ico">📥</span>
           Document Inbox
-          <span className="sb-badge" style={{ background: "#3b82f6" }}>HubDoc</span>
+          <span className="sb-badge" style={{ background: "var(--blue)" }}>HubDoc</span>
         </Link>
         <Link
           href="/upload"
           className={`sb-item ${isUpload ? "active" : ""}`}
           style={{ textDecoration: "none" }}
         >
-          <span className="ico" style={{ marginRight: "0.5rem" }}>⬆</span>
+          <span className="ico">⬆</span>
           Upload Documents
         </Link>
       </div>
-
-      {/* ── Tab-based sections ── */}
-      {groups.map((grp) => (
-        <div key={grp.name}>
-          <div className="sb-grp">{grp.name}</div>
-          {grp.items.map((item) => {
-            const isStandalone = 'href' in item && typeof item.href === 'string';
-            const isActive = isStandalone
-              ? pathname === item.href
-              : !isStandalonePage && currentTab === item.id;
-            const href = isStandalone ? (item.href as string) : `/dashboard?tab=${item.id}`;
-            
-            return (
-              <Link
-                key={item.id}
-                href={href}
-                className={`sb-item ${isActive ? "active" : ""}`}
-                style={{ textDecoration: "none" }}
-              >
-                <span className="ico" style={{ marginRight: "0.5rem" }}>{item.ico}</span>
-                {item.label}
-                {'badge' in item && item.badge && <span className="sb-badge">{item.badge}</span>}
-              </Link>
-            );
-          })}
-        </div>
-      ))}
     </aside>
   );
 }

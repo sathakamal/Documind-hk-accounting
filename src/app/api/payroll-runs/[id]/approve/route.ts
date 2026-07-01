@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createJournalEntry } from "@/lib/journal";
 import { Decimal } from "decimal.js";
 import { initialAccounts } from "@/lib/initialAccounts";
+import { isAdmin } from "@/lib/rbac";
 
 export async function POST(
   req: Request,
@@ -12,8 +13,8 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.organizationId || !isAdmin(session)) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
     }
 
     const { id } = await params;
@@ -58,6 +59,7 @@ export async function POST(
 
     // Get the necessary accounts
     const salariesExpense = await getOrCreateAccount("6010");
+    const housingAllowanceExpense = await getOrCreateAccount("6060");
     const mpfExpense = await getOrCreateAccount("6020");
     const mpfPayable = await getOrCreateAccount("2210");
     const cashAccount = await getOrCreateAccount("1010");
@@ -67,11 +69,17 @@ export async function POST(
       throw new Error("Required accounts not found and could not be auto-created. Please set up your chart of accounts.");
     }
 
+    // Calculate total housing allowance
+    const totalHousingAllowance = payrollRun.lines.reduce((sum, line) => 
+      sum.plus(new Decimal(line.housingAllowance)), new Decimal(0)
+    );
+    const totalBasicSalary = payrollRun.totalGrossPay.minus(totalHousingAllowance);
+
     // Create journal entry lines
-    const journalLines = [
+    const journalLines: any[] = [
       {
         accountId: salariesExpense.id,
-        debit: new Decimal(payrollRun.totalGrossPay),
+        debit: new Decimal(totalBasicSalary),
         credit: new Decimal(0),
       },
       {
@@ -90,6 +98,14 @@ export async function POST(
         credit: new Decimal(payrollRun.totalEmployeeMpf.plus(payrollRun.totalEmployerMpf)),
       },
     ];
+
+    if (housingAllowanceExpense && totalHousingAllowance.greaterThan(0)) {
+      journalLines.push({
+        accountId: housingAllowanceExpense.id,
+        debit: new Decimal(totalHousingAllowance),
+        credit: new Decimal(0),
+      });
+    }
 
     // Create journal entry WITHOUT transaction to avoid HTTP transaction limits
     const journalEntry = await createJournalEntry(prisma, {

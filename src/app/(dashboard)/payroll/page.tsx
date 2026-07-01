@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatMoney, formatDate } from "@/lib/utils";
+import { formatMoney, formatDate, maskHKID } from "@/lib/utils";
 import { Plus, CheckCircle2, History, DollarSign, AlertTriangle, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -239,8 +237,7 @@ export default function PayrollPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <PageHeader title="Payroll Processing" description="Process your monthly payroll" />
+      <div className="hk-page">
         <div className="text-center py-20 text-muted-foreground">Loading payroll...</div>
       </div>
     );
@@ -264,25 +261,50 @@ export default function PayrollPage() {
   const daysUntilDeadline = differenceInDays(nextMPFDeadline, new Date());
   const isDeadlineClose = daysUntilDeadline <= 7;
   const isDeadlineCritical = daysUntilDeadline <= 3;
+  const latestPayroll = payrollRuns[0] || null;
+  const previewLines = latestPayroll
+    ? latestPayroll.lines
+    : employees.map((emp) => {
+        const grossPay = emp.basicSalary + emp.housingAllowance;
+        const employeeMpf = emp.mpfExempt
+          ? 0
+          : grossPay < 7100
+            ? 0
+            : Math.min(grossPay * 0.05, 1500);
+        const employerMpf = emp.mpfExempt ? 0 : Math.min(grossPay * 0.05, 1500);
+        const netPay = grossPay - employeeMpf;
+        const totalCost = grossPay + employerMpf;
+
+        return {
+          id: emp.id,
+          employee: emp,
+          basicSalary: emp.basicSalary,
+          housingAllowance: emp.housingAllowance,
+          grossPay,
+          employeeMpf,
+          netPay,
+          employerMpf,
+          totalCost,
+        };
+      });
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Payroll Processing"
-        description="Process your monthly payroll and MPF contributions"
-        actions={
+    <div className="hk-page">
+      <div className="hk-card">
+        <div className="hk-card-h">
+          <h3>💵 Payroll Processing</h3>
           <div className="flex gap-2">
             <Link href="/payroll-history">
-              <Button variant="outline" className="hk-btn hk-btn-o">
+              <Button variant="outline" className="hk-btn hk-btn-o hk-btn-s">
                 <History className="w-4 h-4 mr-2" />
                 History
               </Button>
             </Link>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="hk-btn hk-btn-n">
+                <Button className="hk-btn hk-btn-n hk-btn-s">
                   <Plus className="w-4 h-4 mr-2" />
-                  New Payroll Run
+                  Run Payroll
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-4xl max-h-[85vh] overflow-y-auto">
@@ -399,8 +421,50 @@ export default function PayrollPage() {
               </DialogContent>
             </Dialog>
           </div>
-        }
-      />
+        </div>
+
+        <div className="hk-alert hk-a-info">
+          Auto-calculates MPF (5% EE/ER, min HK$7,100, max HK$30,000). Posts journal: DR Salaries Exp + DR MPF Exp (ER) / CR Bank + CR MPF Payable.
+        </div>
+
+        <div className="hk-tw">
+          <table className="hk-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th className="hk-nm">Basic</th>
+                <th className="hk-nm">Allowance</th>
+                <th className="hk-nm">Gross</th>
+                <th className="hk-nm">EE MPF</th>
+                <th className="hk-nm">Net Pay</th>
+                <th className="hk-nm">ER MPF</th>
+                <th className="hk-nm">Total Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {previewLines.map((line) => (
+                <tr key={line.id}>
+                  <td>{line.employee.name}</td>
+                  <td className="hk-nm">{formatMoney(line.basicSalary, "HKD")}</td>
+                  <td className="hk-nm">{formatMoney(line.housingAllowance, "HKD")}</td>
+                  <td className="hk-nm">{formatMoney(line.grossPay, "HKD")}</td>
+                  <td className="hk-nm">{formatMoney(line.employeeMpf, "HKD")}</td>
+                  <td className="hk-nm" style={{ color: "var(--green)", fontWeight: 700 }}>{formatMoney(line.netPay, "HKD")}</td>
+                  <td className="hk-nm">{formatMoney(line.employerMpf, "HKD")}</td>
+                  <td className="hk-nm">{formatMoney(line.totalCost, "HKD")}</td>
+                </tr>
+              ))}
+              {!latestPayroll && employees.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="text-center text-muted-foreground py-8">
+                    No active employees. Please add employees first.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* MPF Payment Deadline Reminder */}
       <div className={`hk-alert ${isDeadlineCritical ? "hk-a-red" : isDeadlineClose ? "hk-a-orange" : "hk-a-blue"}`}>
@@ -437,17 +501,24 @@ export default function PayrollPage() {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="hk-card">
+        <div className="hk-card-h">
+          <h3>📋 Payroll Workflow</h3>
+          <span className="hk-badge hk-b-gold">DRAFT → APPROVE → PAID</span>
+        </div>
+        <div className="hk-alert hk-a-warn">
+          HK payroll should follow a controlled workflow. Approval creates the accrual journal entry, and payment should only be marked after bank settlement and MPF remittance preparation.
+        </div>
+
         {payrollRuns.length === 0 ? (
-          <div className="hk-card">
-            <div className="text-center py-12 text-muted-foreground">
-              No payroll runs yet. Click "New Payroll Run" to get started.
-            </div>
+          <div className="text-center py-12 text-muted-foreground">
+            No payroll runs yet. Click "Run Payroll" to get started.
           </div>
         ) : (
-          payrollRuns.map((payroll) => (
-            <div className="hk-card" key={payroll.id}>
-              <div className="hk-card-h flex flex-row items-center justify-between pb-2">
+          <div className="space-y-4">
+            {payrollRuns.map((payroll) => (
+              <div className="hk-card" key={payroll.id} style={{ background: "var(--gray)" }}>
+                <div className="hk-card-h flex flex-row items-center justify-between pb-2">
                 <div>
                   <h3>{payroll.runNumber}</h3>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -475,10 +546,10 @@ export default function PayrollPage() {
                     </Button>
                   )}
                 </div>
-              </div>
-              <div>
-                <div className="hk-grid hk-g5 mb-6">
-                  <div className="hk-stat">
+                </div>
+                <div>
+                  <div className="hk-grid hk-g5 mb-6">
+                    <div className="hk-stat">
                     <div className="lb">Gross Pay</div>
                     <div className="vl">{formatMoney(payroll.totalGrossPay, "HKD")}</div>
                   </div>
@@ -519,7 +590,7 @@ export default function PayrollPage() {
                       {payroll.lines.map((line) => (
                         <tr key={line.id}>
                           <td className="font-medium">{line.employee.name}</td>
-                          <td className="font-mono text-sm">{line.employee.hkid || "-"}</td>
+                          <td className="font-mono text-sm">{line.employee.hkid ? maskHKID(line.employee.hkid) : "-"}</td>
                           <td className="hk-nm font-mono">{formatMoney(line.basicSalary, "HKD")}</td>
                           <td className="hk-nm font-mono">{formatMoney(line.housingAllowance, "HKD")}</td>
                           <td className="hk-nm font-mono" style={{ fontWeight: "bold" }}>{formatMoney(line.grossPay, "HKD")}</td>
@@ -533,8 +604,9 @@ export default function PayrollPage() {
                   </table>
                 </div>
               </div>
-            </div>
-          ))
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

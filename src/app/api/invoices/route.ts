@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createJournalEntry } from "@/lib/journal";
 import { Decimal } from "decimal.js";
+import { invoiceSchema } from "@/lib/validations";
 
 export async function GET() {
   try {
@@ -33,7 +34,19 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { invoiceNumber, customerId, issueDate, dueDate, currency, exchangeRate, subtotal, taxAmount, totalAmount, lines, taxStatus } = body;
+    
+    const validation = invoiceSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({ 
+        success: false, 
+        error: "Validation failed",
+        details: validation.error.errors 
+      }, { status: 400 });
+    }
+
+    const { customerId, issueDate, dueDate, currency, exchangeRate, subtotal, taxAmount, totalAmount, lines } = validation.data;
+    const invoiceNumber = body.invoiceNumber;
+    const taxStatus = body.taxStatus;
 
     const orgId = session.user.organizationId;
 

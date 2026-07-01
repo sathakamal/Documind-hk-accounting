@@ -808,7 +808,7 @@ function WorkspaceContent() {
             </div>
           </div>
 
-          <div className="hk-grid hk-g2" style={{ marginTop: "18px" }}>
+          <div className="hk-grid hk-g2">
             <div className="hk-card">
               <div className="hk-card-h"><h3>⏳ AR Aging Overview</h3></div>
               <div className="hk-tw">
@@ -842,7 +842,7 @@ function WorkspaceContent() {
             </div>
 
             <div className="hk-card">
-              <div className="hk-card-h"><h3>📋 Required Statements</h3></div>
+              <div className="hk-card-h"><h3>📋 Required Reports (Per Framework)</h3></div>
               {cfg.reports.map((r) => (
                 <div key={r} className="hk-chk">
                   <div className="hk-chk-ico hk-chk-ok">✅</div>

@@ -1,16 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { formatMoney, formatDate } from "@/lib/utils";
-import { Plus, Trash2, Edit, Eye, CheckCircle, XCircle, User, Building, Calendar, CreditCard } from "lucide-react";
+import { Plus, Trash2, Edit, Eye, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface Employee {
@@ -263,192 +260,152 @@ export default function EmployeesPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <PageHeader title="Employee Records" description="Manage your employee records" />
+      <div className="hk-page">
         <div className="text-center py-20 text-muted-foreground">Loading employees...</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Employee Records"
-        description="Manage your employee records, MPF contributions, and employment details"
-        actions={
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (confirm("Are you sure you want to seed demo employees?")) {
-                  handleSeed();
-                }
-              }}
-            >
-              Seed Demo Data
+    <div className="hk-page">
+      <div className="flex gap-2 justify-end">
+        <Button
+          variant="outline"
+          className="hk-btn hk-btn-o"
+          onClick={() => {
+            if (confirm("Are you sure you want to seed demo employees?")) {
+              handleSeed();
+            }
+          }}
+        >
+          Seed Demo Data
+        </Button>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="hk-btn hk-btn-n">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Employee
             </Button>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-[#0a1628] hover:bg-[#112240]">
-                  <Plus className="w-4 h-4 mr-2" />
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Add New Employee</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleAddSubmit} className="space-y-4 pt-4">
+              <div className="hk-fr hk-fr4">
+                <div className="hk-fg">
+                  <Label htmlFor="name">Full Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="John Doe"
+                    required
+                  />
+                </div>
+                <div className="hk-fg">
+                  <Label htmlFor="hkid">HKID</Label>
+                  <Input
+                    id="hkid"
+                    value={formData.hkid}
+                    onChange={(e) => setFormData({ ...formData, hkid: e.target.value })}
+                    placeholder="A123456(7)"
+                  />
+                </div>
+                <div className="hk-fg">
+                  <Label htmlFor="position">Position</Label>
+                  <Input
+                    id="position"
+                    value={formData.position}
+                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                    placeholder="Accountant"
+                  />
+                </div>
+                <div className="hk-fg">
+                  <Label htmlFor="department">Department</Label>
+                  <Input
+                    id="department"
+                    value={formData.department}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    placeholder="Finance"
+                  />
+                </div>
+                <div className="hk-fg">
+                  <Label htmlFor="startDate">Start Date *</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="hk-fg">
+                  <Label htmlFor="basicSalary">Basic Salary (HKD) *</Label>
+                  <Input
+                    id="basicSalary"
+                    type="number"
+                    step="0.01"
+                    value={formData.basicSalary}
+                    onChange={(e) => setFormData({ ...formData, basicSalary: e.target.value })}
+                    placeholder="25000"
+                    required
+                  />
+                </div>
+                <div className="hk-fg">
+                  <Label htmlFor="housingAllowance">Housing Allowance (HKD)</Label>
+                  <Input
+                    id="housingAllowance"
+                    type="number"
+                    step="0.01"
+                    value={formData.housingAllowance}
+                    onChange={(e) => setFormData({ ...formData, housingAllowance: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="hk-fg">
+                  <Label htmlFor="mpfExempt">MPF Status</Label>
+                  <Select
+                    value={formData.mpfExempt}
+                    onValueChange={(val) => setFormData({ ...formData, mpfExempt: val })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no">Required (EE/ER 5%)</SelectItem>
+                      <SelectItem value="yes">Exempt</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="hk-fg">
+                <Label htmlFor="notes">Notes</Label>
+                <Input
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Additional notes"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-[#0a1628] hover:bg-[#112240]">
                   Add Employee
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Add New Employee</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleAddSubmit} className="space-y-4 pt-4">
-                  <div className="hk-fr hk-fr4">
-                    <div className="hk-fg">
-                      <Label htmlFor="name">Full Name *</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="John Doe"
-                        required
-                      />
-                    </div>
-                    <div className="hk-fg">
-                      <Label htmlFor="hkid">HKID</Label>
-                      <Input
-                        id="hkid"
-                        value={formData.hkid}
-                        onChange={(e) => setFormData({ ...formData, hkid: e.target.value })}
-                        placeholder="A123456(7)"
-                      />
-                    </div>
-                    <div className="hk-fg">
-                      <Label htmlFor="position">Position</Label>
-                      <Input
-                        id="position"
-                        value={formData.position}
-                        onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                        placeholder="Accountant"
-                      />
-                    </div>
-                    <div className="hk-fg">
-                      <Label htmlFor="department">Department</Label>
-                      <Input
-                        id="department"
-                        value={formData.department}
-                        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                        placeholder="Finance"
-                      />
-                    </div>
-                    <div className="hk-fg">
-                      <Label htmlFor="startDate">Start Date *</Label>
-                      <Input
-                        id="startDate"
-                        type="date"
-                        value={formData.startDate}
-                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="hk-fg">
-                      <Label htmlFor="basicSalary">Basic Salary (HKD) *</Label>
-                      <Input
-                        id="basicSalary"
-                        type="number"
-                        step="0.01"
-                        value={formData.basicSalary}
-                        onChange={(e) => setFormData({ ...formData, basicSalary: e.target.value })}
-                        placeholder="25000"
-                        required
-                      />
-                    </div>
-                    <div className="hk-fg">
-                      <Label htmlFor="housingAllowance">Housing Allowance (HKD)</Label>
-                      <Input
-                        id="housingAllowance"
-                        type="number"
-                        step="0.01"
-                        value={formData.housingAllowance}
-                        onChange={(e) => setFormData({ ...formData, housingAllowance: e.target.value })}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="hk-fg">
-                      <Label htmlFor="mpfExempt">MPF Status</Label>
-                      <Select
-                        value={formData.mpfExempt}
-                        onValueChange={(val) => setFormData({ ...formData, mpfExempt: val })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="no">Required (EE/ER 5%)</SelectItem>
-                          <SelectItem value="yes">Exempt</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="hk-fg">
-                    <Label htmlFor="notes">Notes</Label>
-                    <Input
-                      id="notes"
-                      value={formData.notes}
-                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      placeholder="Additional notes"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" className="bg-[#0a1628] hover:bg-[#112240]">
-                      Add Employee
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        }
-      />
-
-      {/* Employee Statistics */}
-      <div className="hk-grid hk-g4">
-        <div className="hk-stat" style={{ "--c": "#0a1628" } as any}>
-          <div className="lb">Total Employees</div>
-          <div className="vl">{employees.length}</div>
-          <div className="sub">All registered staff</div>
-          <div className="si">👥</div>
-        </div>
-        
-        <div className="hk-stat" style={{ "--c": "#10b981" } as any}>
-          <div className="lb">Active</div>
-          <div className="vl">{employees.filter(e => e.status === "ACTIVE").length}</div>
-          <div className="sub">Currently employed</div>
-          <div className="si">✅</div>
-        </div>
-        
-        <div className="hk-stat" style={{ "--c": "#6b7280" } as any}>
-          <div className="lb">Inactive</div>
-          <div className="vl">{employees.filter(e => e.status === "INACTIVE").length}</div>
-          <div className="sub">Former staff</div>
-          <div className="si">⏸️</div>
-        </div>
-        
-        <div className="hk-stat" style={{ "--c": "#f59e0b" } as any}>
-          <div className="lb">MPF Exempt</div>
-          <div className="vl">{employees.filter(e => e.mpfExempt).length}</div>
-          <div className="sub">No MPF required</div>
-          <div className="si">💳</div>
-        </div>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Employee Table */}
       <div className="hk-card">
         <div className="hk-card-h">
-          <h3>Employee List</h3>
+          <h3>👥 Employee Records</h3>
           <div className="flex gap-2">
-            <button className="hk-btn hk-btn-o hk-btn-s">
-              Export CSV
-            </button>
+            <span className="hk-badge hk-b-blue">{employees.length} Employee{employees.length === 1 ? "" : "s"}</span>
           </div>
         </div>
         <div className="hk-tw">
@@ -477,30 +434,11 @@ export default function EmployeesPage() {
                   
                   return (
                     <tr key={emp.id}>
-                      <td className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          {emp.name}
-                        </div>
-                      </td>
+                      <td className="font-medium">{emp.name}</td>
                       <td className="font-mono text-sm">{emp.hkid || "-"}</td>
-                      <td>
-                        <span className={`hk-badge ${emp.position ? "hk-b-blue" : "hk-b-gray"}`}>
-                          {emp.position || "-"}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <Building className="h-4 w-4 text-muted-foreground" />
-                          {emp.department || "-"}
-                        </div>
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          {formatDate(emp.startDate)}
-                        </div>
-                      </td>
+                      <td>{emp.position || "-"}</td>
+                      <td>{emp.department || "-"}</td>
+                      <td>{formatDate(emp.startDate)}</td>
                       <td className="hk-nm font-bold">
                         {formatMoney(emp.basicSalary, "HKD")}
                       </td>
@@ -517,7 +455,7 @@ export default function EmployeesPage() {
                         </span>
                       </td>
                       <td>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 flex-wrap">
                           <button
                             className="hk-btn hk-btn-b hk-btn-s"
                             onClick={() => openViewDialog(emp)}
@@ -703,17 +641,11 @@ export default function EmployeesPage() {
                 </div>
                 <div className="hk-fg">
                   <Label className="text-sm font-medium text-muted-foreground">Department</Label>
-                  <div className="flex items-center gap-2">
-                    <Building className="h-4 w-4 text-muted-foreground" />
-                    {selectedEmployee.department || "-"}
-                  </div>
+                  <div>{selectedEmployee.department || "-"}</div>
                 </div>
                 <div className="hk-fg">
                   <Label className="text-sm font-medium text-muted-foreground">Start Date</Label>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    {formatDate(selectedEmployee.startDate)}
-                  </div>
+                  <div>{formatDate(selectedEmployee.startDate)}</div>
                 </div>
                 <div className="hk-fg">
                   <Label className="text-sm font-medium text-muted-foreground">Status</Label>

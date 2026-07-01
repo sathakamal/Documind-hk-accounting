@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createJournalEntry } from "@/lib/journal";
 import { Decimal } from "decimal.js";
+import { billSchema } from "@/lib/validations";
 
 export async function GET() {
   try {
@@ -33,7 +34,19 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { billNumber, vendorBillRef, vendorId, issueDate, dueDate, currency, exchangeRate, subtotal, taxAmount, totalAmount, lines, taxStatus } = body;
+    
+    const validation = billSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({ 
+        success: false, 
+        error: "Validation failed",
+        details: validation.error.errors 
+      }, { status: 400 });
+    }
+
+    const { vendorBillRef, vendorId, issueDate, dueDate, currency, exchangeRate, subtotal, taxAmount, totalAmount, lines } = validation.data;
+    const billNumber = body.billNumber;
+    const taxStatus = body.taxStatus;
 
     const orgId = session.user.organizationId;
 
@@ -77,15 +90,17 @@ export async function POST(req: Request) {
     // Accounts Payable (2000) is credited.
     // The expense/COGS accounts are debited. We map line item categories.
     const apAccount = await prisma.account.findFirst({ where: { organizationId: orgId, code: "2000" } });
+    const taxPayableAccount = await prisma.account.findFirst({ where: { organizationId: orgId, code: "2300" } });
     if (!apAccount) throw new Error("Accounts Payable Account (Code 2000) not found");
 
     const journalLines: any[] = [];
     const totalHkd = new Decimal(totalAmount).times(new Decimal(exchangeRate || 1));
+    const taxHkd = new Decimal(taxAmount || 0).times(new Decimal(exchangeRate || 1));
+    const expenseHkd = totalHkd.minus(taxHkd);
     
-    // We will debit the default COGS account (5000) or check standard category mapping
-    // For simplicity, sum all lines and debit the mapped account(s)
+    // Debit expense accounts for the non-tax portion
     for (const line of lines) {
-      let expenseCode = "5000"; // default to COGS
+      let expenseCode = "5000";
       const cat = (line.category || "").toUpperCase();
       
       if (cat.includes("RENT")) expenseCode = "6000";
@@ -97,18 +112,30 @@ export async function POST(req: Request) {
       else if (cat.includes("OFFICE") || cat.includes("SUPPL")) expenseCode = "6060";
 
       const mappedAcc = await prisma.account.findFirst({ where: { organizationId: orgId, code: expenseCode } });
-      const lineHkd = new Decimal(line.amount).times(new Decimal(exchangeRate || 1));
+      const lineAmount = new Decimal(line.amount);
+      const lineTax = lineAmount.times(new Decimal(line.taxRate || 0)).dividedBy(100);
+      const lineExpense = lineAmount.minus(lineTax);
+      const lineExpenseHkd = lineExpense.times(new Decimal(exchangeRate || 1));
       
       if (mappedAcc) {
         journalLines.push({
           accountId: mappedAcc.id,
-          debit: lineHkd,
+          debit: lineExpenseHkd,
           credit: 0,
         });
       }
     }
 
-    // Add Credit for Accounts Payable
+    // Debit Tax Payable for the tax portion (this represents the tax to be remitted)
+    if (taxPayableAccount && taxHkd.greaterThan(0)) {
+      journalLines.push({
+        accountId: taxPayableAccount.id,
+        debit: taxHkd,
+        credit: 0,
+      });
+    }
+
+    // Add Credit for Accounts Payable (total amount including tax)
     journalLines.push({
       accountId: apAccount.id,
       debit: 0,

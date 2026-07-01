@@ -88,9 +88,22 @@ export async function POST(request: Request) {
     });
 
     // Run AI extraction asynchronously (non-blocking — update DB after)
-    runAIExtraction(document.id, buffer, file.type, file.name).catch(console.error);
+    runAIExtraction(document.id, buffer, file.type, file.name).catch(async (error) => {
+      console.error("AI extraction failed:", error);
+      await prisma.document.update({
+        where: { id: document.id },
+        data: {
+          status: "ERROR",
+          processingError: error instanceof Error ? error.message : "Unknown AI extraction error",
+        },
+      });
+    });
 
-    return NextResponse.json({ success: true, data: document });
+    return NextResponse.json({ 
+      success: true, 
+      data: document,
+      message: "Document uploaded. AI extraction in progress — refresh to see results." 
+    });
   } catch (error) {
     console.error("Documents POST error:", error);
     return NextResponse.json(

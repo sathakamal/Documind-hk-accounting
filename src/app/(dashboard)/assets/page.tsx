@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 
 interface FixedAsset {
   id: number;
@@ -27,7 +26,6 @@ interface IRDPool {
 }
 
 export default function FixedAssetsPage() {
-  const searchParams = useSearchParams();
   const [assets, setAssets] = useState<FixedAsset[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newAsset, setNewAsset] = useState({
@@ -202,171 +200,56 @@ export default function FixedAssetsPage() {
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">🏗 Fixed Asset Register & IRD Pools</h1>
-        <p className="text-gray-600 mt-1">Track fixed assets with HK IRD pool calculations for tax allowances</p>
-      </div>
-
-      {/* IRD Information */}
-      <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-blue-900 mb-2">IRD Pooling Rules for Hong Kong</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg p-3 border border-blue-100">
-            <div className="text-sm font-medium text-blue-700 mb-1">Pool A (30%)</div>
-            <div className="text-xs text-gray-600">Computers, plant & machinery, qualifying equipment</div>
-            <div className="mt-2 text-sm text-gray-700">
-              Initial allowance: 60% for qualifying plant/machinery purchased on or after specific dates (standard 20%)
-            </div>
-          </div>
-          <div className="bg-white rounded-lg p-3 border border-blue-100">
-            <div className="text-sm font-medium text-blue-700 mb-1">Pool B (20%)</div>
-            <div className="text-xs text-gray-600">Motor vehicles, furniture, fixtures & fittings</div>
-            <div className="mt-2 text-sm text-gray-700">
-              Standard initial allowance: 20% for most assets
-            </div>
-          </div>
-          <div className="bg-white rounded-lg p-3 border border-blue-100">
-            <div className="text-sm font-medium text-blue-700 mb-1">Pool C (10%)</div>
-            <div className="text-xs text-gray-600">Buildings, structures, land improvements</div>
-            <div className="mt-2 text-sm text-gray-700">
-              Lower rate for long-lived assets with extended useful lives
-            </div>
-          </div>
+    <div className="hk-page">
+      <div className="hk-card">
+        <div className="hk-card-h">
+          <h3>🏗 Fixed Asset Register & IRD Pools</h3>
+          <button onClick={() => setShowAddModal(true)} className="hk-btn hk-btn-n hk-btn-s">+ Asset</button>
         </div>
-      </div>
 
-      {/* Summary Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-sm font-medium text-gray-500">Total Asset Cost</div>
-          <div className="mt-1 text-2xl font-semibold text-blue-600">
-            {formatCurrency(totalCost)}
+        <div className="hk-alert hk-a-info">
+          IRD Pooling: Pool A (30% - computers), Pool B (20% - vehicles/furniture), Pool C (10% - buildings). Initial allowance = 60% for qualifying plant/machinery purchased on or after specific dates (standard 20%).
+        </div>
+
+        <div className="hk-grid hk-g3" style={{ marginBottom: "14px" }}>
+          <div className="hk-stat" style={{ "--c": "var(--blue)" } as React.CSSProperties}>
+            <div className="lb">Total Asset Cost</div>
+            <div className="vl">{formatCurrency(totalCost)}</div>
+            <div className="sub">{assets.length} asset{assets.length !== 1 ? "s" : ""}</div>
           </div>
-          <div className="mt-2 text-xs text-gray-500">
-            {assets.length} asset{assets.length !== 1 ? 's' : ''}
+          <div className="hk-stat" style={{ "--c": "var(--purple)" } as React.CSSProperties}>
+            <div className="lb">Book Depreciation</div>
+            <div className="vl">{formatCurrency(totalBookDepreciation)}</div>
+            <div className="sub">Net book value: {formatCurrency(totalCost - totalBookDepreciation)}</div>
+          </div>
+          <div className="hk-stat" style={{ "--c": "var(--green)" } as React.CSSProperties}>
+            <div className="lb">Tax Allowances</div>
+            <div className="vl">{formatCurrency(totalTaxAllowances)}</div>
+            <div className="sub">Timing difference: {formatCurrency(totalBookDepreciation - totalTaxAllowances)}</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-sm font-medium text-gray-500">Book Depreciation</div>
-          <div className="mt-1 text-2xl font-semibold text-purple-600">
-            {formatCurrency(totalBookDepreciation)}
-          </div>
-          <div className="mt-2 text-xs text-gray-500">
-            Net book value: {formatCurrency(totalCost - totalBookDepreciation)}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="text-sm font-medium text-gray-500">Tax Allowances</div>
-          <div className="mt-1 text-2xl font-semibold text-green-600">
-            {formatCurrency(totalTaxAllowances)}
-          </div>
-          <div className="mt-2 text-xs text-gray-500">
-            Timing difference: {formatCurrency(totalBookDepreciation - totalTaxAllowances)}
-          </div>
-        </div>
-      </div>
-
-      {/* Add Asset Button */}
-      <div className="mb-6">
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 flex items-center gap-2"
-        >
-          <span>+</span> Add New Asset
-        </button>
-      </div>
-
-      {/* IRD Pool Summary */}
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">IRD Pool Summary</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {irpPools.map(pool => (
-            <div key={pool.code} className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <div className="text-sm font-medium text-gray-900">{pool.name}</div>
-                  <div className="text-xs text-gray-500">{pool.assets.length} asset{pool.assets.length !== 1 ? 's' : ''}</div>
-                </div>
-                <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                  {pool.rate * 100}%
-                </span>
-              </div>
-              <div className="space-y-1 mt-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Total Cost:</span>
-                  <span className="font-medium">{formatCurrency(pool.totalCost)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Initial Allowance:</span>
-                  <span className="font-medium text-green-600">{formatCurrency(pool.initialAllowance)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Annual Allowance:</span>
-                  <span className="font-medium text-green-600">{formatCurrency(pool.annualAllowance)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Tax WDV:</span>
-                  <span className="font-medium text-blue-600">{formatCurrency(pool.taxWDV)}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Asset Register Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <h2 className="text-lg font-semibold text-gray-900">Fixed Asset Register</h2>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="hk-tw">
+          <table className="hk-table">
+            <thead>
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Asset
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Cost
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Pool
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Init.Allow
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ann.Allow
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Book WDV
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tax WDV
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th>Asset</th>
+                <th>Category</th>
+                <th>Date</th>
+                <th className="hk-nm">Cost</th>
+                <th>Pool</th>
+                <th className="hk-nm">Init.Allow</th>
+                <th className="hk-nm">Ann.Allow</th>
+                <th className="hk-nm">Book WDV</th>
+                <th className="hk-nm">Tax WDV</th>
+                <th>Status</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody>
               {assets.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-8 text-center text-gray-500">
-                    No assets registered. Click "Add New Asset" to get started.
+                  <td colSpan={10} className="text-center text-muted-foreground py-8">
+                    No assets registered. Click "+ Asset" to get started.
                   </td>
                 </tr>
               ) : (
@@ -376,53 +259,29 @@ export default function FixedAssetsPage() {
                   
                   return (
                     <tr key={asset.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {asset.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {asset.category}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {asset.date}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                        {formatCurrency(asset.cost)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          asset.pool === "A" ? "bg-blue-100 text-blue-800" :
-                          asset.pool === "B" ? "bg-green-100 text-green-800" :
-                          "bg-purple-100 text-purple-800"
+                      <td>{asset.name}</td>
+                      <td>{asset.category}</td>
+                      <td>{asset.date}</td>
+                      <td className="hk-nm">{formatCurrency(asset.cost)}</td>
+                      <td>
+                        <span className={`hk-badge ${
+                          asset.pool === "A" ? "hk-b-blue" :
+                          asset.pool === "B" ? "hk-b-green" :
+                          "hk-b-purple"
                         }`}>
                           {asset.pool} ({asset.pool === "A" ? "30%" : asset.pool === "B" ? "20%" : "10%"})
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                        {formatCurrency(taxAllow.initialAllowance)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                        {formatCurrency(taxAllow.annualAllowance)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-medium">
-                        {formatCurrency(bookDep.bookWDV)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-purple-600 font-medium">
-                        {formatCurrency(taxAllow.taxWDV)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          asset.status === "Active" ? "bg-green-100 text-green-800" :
-                          asset.status === "Disposed" ? "bg-red-100 text-red-800" :
-                          "bg-yellow-100 text-yellow-800"
-                        }`}>
-                          {asset.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="hk-nm">{formatCurrency(taxAllow.initialAllowance)}</td>
+                      <td className="hk-nm">{formatCurrency(taxAllow.annualAllowance)}</td>
+                      <td className="hk-nm">{formatCurrency(bookDep.bookWDV)}</td>
+                      <td className="hk-nm">{formatCurrency(taxAllow.taxWDV)}</td>
+                      <td>
                         <select
                           value={asset.status}
                           onChange={(e) => handleStatusChange(asset.id, e.target.value)}
-                          className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+                          className="hk-input"
+                          style={{ minWidth: "110px", padding: "6px 8px" }}
                         >
                           <option value="Active">Active</option>
                           <option value="Inactive">Inactive</option>
@@ -434,28 +293,16 @@ export default function FixedAssetsPage() {
                 })
               )}
             </tbody>
-            <tfoot className="bg-gray-50">
+            <tfoot>
               <tr>
-                <td colSpan={3} className="px-6 py-3 text-sm font-medium text-gray-900">
-                  <strong>TOTALS</strong>
-                </td>
-                <td className="px-6 py-3 text-sm font-medium text-gray-900">
-                  {formatCurrency(totalCost)}
-                </td>
-                <td className="px-6 py-3"></td>
-                <td className="px-6 py-3 text-sm font-medium text-green-600">
-                  {formatCurrency(irpPools.reduce((sum, pool) => sum + pool.initialAllowance, 0))}
-                </td>
-                <td className="px-6 py-3 text-sm font-medium text-green-600">
-                  {formatCurrency(irpPools.reduce((sum, pool) => sum + pool.annualAllowance, 0))}
-                </td>
-                <td className="px-6 py-3 text-sm font-medium text-blue-600">
-                  {formatCurrency(totalCost - totalBookDepreciation)}
-                </td>
-                <td className="px-6 py-3 text-sm font-medium text-purple-600">
-                  {formatCurrency(irpPools.reduce((sum, pool) => sum + pool.taxWDV, 0))}
-                </td>
-                <td colSpan={2} className="px-6 py-3"></td>
+                <td colSpan={3}><strong>Totals</strong></td>
+                <td className="hk-nm">{formatCurrency(totalCost)}</td>
+                <td></td>
+                <td className="hk-nm">{formatCurrency(irpPools.reduce((sum, pool) => sum + pool.initialAllowance, 0))}</td>
+                <td className="hk-nm">{formatCurrency(irpPools.reduce((sum, pool) => sum + pool.annualAllowance, 0))}</td>
+                <td className="hk-nm">{formatCurrency(totalCost - totalBookDepreciation)}</td>
+                <td className="hk-nm">{formatCurrency(irpPools.reduce((sum, pool) => sum + pool.taxWDV, 0))}</td>
+                <td></td>
               </tr>
             </tfoot>
           </table>
@@ -572,17 +419,34 @@ export default function FixedAssetsPage() {
         </div>
       )}
 
-      {/* IRD Compliance Notes */}
-      <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-gray-900 mb-2">IRD Tax Allowance Compliance Notes</h3>
-        <ul className="text-sm text-gray-600 space-y-1">
-          <li>• Initial allowance: 60% for qualifying plant/machinery purchased on or after specific dates (standard 20%)</li>
-          <li>• Annual allowance: Calculated on reducing balance basis after deducting initial allowance</li>
-          <li>• Pool A (30%): Computers, plant & machinery, qualifying equipment</li>
-          <li>• Pool B (20%): Motor vehicles, furniture, fixtures & fittings</li>
-          <li>• Pool C (10%): Buildings, structures, land improvements</li>
-          <li>• Timing differences between book depreciation and tax allowances create deferred tax assets/liabilities</li>
-          <li>• Assets must be used in the production of assessable profits to qualify for tax allowances</li>
+      <div className="hk-card">
+        <div className="hk-card-h">
+          <h3>📊 IRD Pool Summary</h3>
+        </div>
+        <div className="hk-grid hk-g3">
+          {irpPools.map(pool => (
+            <div key={pool.code} className="hk-notes-box">
+              <h4>{pool.name}</h4>
+              <ul>
+                <li>Total Cost: {formatCurrency(pool.totalCost)}</li>
+                <li>Initial Allowance: {formatCurrency(pool.initialAllowance)}</li>
+                <li>Annual Allowance: {formatCurrency(pool.annualAllowance)}</li>
+                <li>Tax WDV: {formatCurrency(pool.taxWDV)}</li>
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="hk-notes-box">
+        <h4>IRD Tax Allowance Compliance Notes</h4>
+        <ul>
+          <li>Initial allowance may be 60% for qualifying plant and machinery on applicable purchases, otherwise standard 20%.</li>
+          <li>Annual allowance is calculated on reducing balance after deducting initial allowance.</li>
+          <li>Pool A (30%): computers, plant & machinery, qualifying equipment.</li>
+          <li>Pool B (20%): motor vehicles, furniture, fixtures & fittings.</li>
+          <li>Pool C (10%): buildings, structures, land improvements.</li>
+          <li>Timing differences between book depreciation and tax allowances create deferred tax balances.</li>
         </ul>
       </div>
     </div>

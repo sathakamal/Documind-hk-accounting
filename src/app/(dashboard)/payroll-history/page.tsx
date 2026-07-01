@@ -1,16 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { formatMoney, formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -60,84 +50,83 @@ export default function PayrollHistoryPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <PageHeader title="Payroll History" description="View your payroll history" />
+      <div className="hk-page">
         <div className="text-center py-20 text-muted-foreground">Loading payroll history...</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Payroll History"
-        description="View your historical payroll runs"
-      />
-
-      <div className="space-y-6">
+    <div className="hk-page">
+      <div className="hk-card">
+        <div className="hk-card-h">
+          <h3>📜 Payroll History</h3>
+          <span className="hk-badge hk-b-blue">{payrollRuns.length} Run{payrollRuns.length === 1 ? "" : "s"}</span>
+        </div>
         {payrollRuns.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12 text-muted-foreground">
+          <div className="text-center py-12 text-muted-foreground">
               No payroll history yet.
-            </CardContent>
-          </Card>
+          </div>
         ) : (
-          payrollRuns.map((payroll) => (
-            <Card key={payroll.id}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="space-y-4">
+            {payrollRuns.map((payroll) => (
+              <div key={payroll.id} className="hk-card" style={{ background: "var(--gray)" }}>
+                <div className="hk-card-h">
                 <div>
-                  <CardTitle>{payroll.runNumber}</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">
+                    <h3>{payroll.runNumber}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
                     {formatDate(payroll.periodStart)} - {formatDate(payroll.periodEnd)} | Payment: {formatDate(payroll.paymentDate)}
                   </p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  payroll.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-500" :
-                  payroll.status === "PAID" ? "bg-blue-500/20 text-blue-500" :
-                  "bg-yellow-500/20 text-yellow-500"
-                }`}>
-                  {payroll.status}
-                </span>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div className="bg-secondary rounded-lg p-3">
-                    <p className="text-sm text-muted-foreground">Gross Pay</p>
-                    <p className="text-lg font-mono font-bold">{formatMoney(payroll.totalGrossPay, "HKD")}</p>
+                  <span className={`hk-badge ${
+                    payroll.status === "APPROVED" ? "hk-b-green" :
+                    payroll.status === "PAID" ? "hk-b-blue" :
+                    "hk-b-orange"
+                  }`}>
+                    {payroll.status}
+                  </span>
+                </div>
+
+                <div className="hk-grid hk-g3" style={{ marginBottom: "16px" }}>
+                  <div className="hk-stat" style={{ "--c": "var(--blue)" } as React.CSSProperties}>
+                    <div className="lb">Gross Pay</div>
+                    <div className="vl">{formatMoney(payroll.totalGrossPay, "HKD")}</div>
                   </div>
-                  <div className="bg-secondary rounded-lg p-3">
-                    <p className="text-sm text-muted-foreground">Net Pay</p>
-                    <p className="text-lg font-mono font-bold text-emerald-500">{formatMoney(payroll.totalNetPay, "HKD")}</p>
+                  <div className="hk-stat" style={{ "--c": "var(--green)" } as React.CSSProperties}>
+                    <div className="lb">Net Pay</div>
+                    <div className="vl" style={{ color: "var(--green)" }}>{formatMoney(payroll.totalNetPay, "HKD")}</div>
                   </div>
-                  <div className="bg-secondary rounded-lg p-3">
-                    <p className="text-sm text-muted-foreground">Total Cost</p>
-                    <p className="text-lg font-mono font-bold text-primary">{formatMoney(payroll.totalCost, "HKD")}</p>
+                  <div className="hk-stat" style={{ "--c": "var(--gold)" } as React.CSSProperties}>
+                    <div className="lb">Total Cost</div>
+                    <div className="vl">{formatMoney(payroll.totalCost, "HKD")}</div>
                   </div>
                 </div>
 
-                <div className="border rounded-lg overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-secondary">
-                      <TableRow>
-                        <TableHead>Employee</TableHead>
-                        <TableHead className="text-right">Gross Pay</TableHead>
-                        <TableHead className="text-right">Net Pay</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                <div className="hk-tw">
+                  <table className="hk-table">
+                    <thead>
+                      <tr>
+                        <th>Employee</th>
+                        <th className="hk-nm">Gross Pay</th>
+                        <th className="hk-nm">Net Pay</th>
+                      </tr>
+                    </thead>
+                    <tbody>
                       {payroll.lines.map((line) => (
-                        <TableRow key={line.id}>
-                          <TableCell className="font-medium">{line.employee.name}</TableCell>
-                          <TableCell className="text-right font-mono">{formatMoney(line.grossPay, "HKD")}</TableCell>
-                          <TableCell className="text-right font-mono text-emerald-500">{formatMoney(line.netPay, "HKD")}</TableCell>
-                        </TableRow>
+                        <tr key={line.id}>
+                          <td className="font-medium">{line.employee.name}</td>
+                          <td className="hk-nm font-mono">{formatMoney(line.grossPay, "HKD")}</td>
+                          <td className="hk-nm font-mono" style={{ color: "var(--green)", fontWeight: 700 }}>
+                            {formatMoney(line.netPay, "HKD")}
+                          </td>
+                        </tr>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </tbody>
+                  </table>
                 </div>
-              </CardContent>
-            </Card>
-          ))
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>

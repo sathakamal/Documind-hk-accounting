@@ -1,15 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdmin } from "@/lib/rbac";
 
-// GET /api/employees/[id] - Get a specific employee
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await context.params;
     const employee = await prisma.employee.findUnique({
-      where: { id },
+      where: { id, organizationId: session.user.organizationId },
     });
 
     if (!employee) {
@@ -32,18 +39,21 @@ export async function GET(
   }
 }
 
-// PUT /api/employees/[id] - Update an employee
 export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.organizationId || !isAdmin(session)) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
+    }
+
     const { id } = await context.params;
     const body = await request.json();
 
-    // Check if employee exists
     const existingEmployee = await prisma.employee.findUnique({
-      where: { id },
+      where: { id, organizationId: session.user.organizationId },
     });
 
     if (!existingEmployee) {
@@ -82,17 +92,20 @@ export async function PUT(
   }
 }
 
-// DELETE /api/employees/[id] - Delete an employee
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.organizationId || !isAdmin(session)) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
+    }
+
     const { id } = await context.params;
     
-    // Check if employee exists
     const existingEmployee = await prisma.employee.findUnique({
-      where: { id },
+      where: { id, organizationId: session.user.organizationId },
     });
 
     if (!existingEmployee) {
@@ -102,7 +115,6 @@ export async function DELETE(
       );
     }
 
-    // Delete the employee
     await prisma.employee.delete({
       where: { id },
     });

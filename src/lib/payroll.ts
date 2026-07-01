@@ -15,7 +15,7 @@ export function calculateMPF(
 
   const income = new Decimal(relevantIncome);
   
-  // HK MPF rules:
+  // HK MPF rules - relevant income includes basic salary + housing allowance + other cash allowances:
   // - Employee earning < $7,100: 0% employee, 5% employer
   // - $7,100 - $30,000: 5% each
   // - > $30,000: capped at $1,500 each

@@ -1,11 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, AlertTriangle, Info, FileText, Calendar } from "lucide-react";
 
 interface ComplianceItem {
   id: string;
@@ -191,33 +186,23 @@ export default function ComplianceCenterPage() {
     setPendingItems(complianceItems.filter(item => item.status === "pending"));
   }, [complianceItems]);
 
-  const getStatusIcon = (status: string) => {
-    switch(status) {
-      case "compliant": return <CheckCircle className="h-5 w-5 text-green-600" />;
-      case "pending": return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
-      case "overdue": return <XCircle className="h-5 w-5 text-red-600" />;
-      case "exempt": return <Info className="h-5 w-5 text-blue-600" />;
-      default: return <Info className="h-5 w-5 text-gray-600" />;
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch(status) {
-      case "compliant": return "bg-green-100 text-green-800";
-      case "pending": return "bg-yellow-100 text-yellow-800";
-      case "overdue": return "bg-red-100 text-red-800";
-      case "exempt": return "bg-blue-100 text-blue-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "compliant": return "hk-badge hk-b-green";
+      case "pending": return "hk-badge hk-b-gold";
+      case "overdue": return "hk-badge hk-b-red";
+      case "exempt": return "hk-badge hk-b-blue";
+      default: return "hk-badge hk-b-gray";
     }
   };
 
   const getFrequencyColor = (frequency: string) => {
     switch(frequency) {
-      case "monthly": return "bg-purple-100 text-purple-800";
-      case "quarterly": return "bg-blue-100 text-blue-800";
-      case "annually": return "bg-green-100 text-green-800";
-      case "one-time": return "bg-orange-100 text-orange-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "monthly": return "hk-badge hk-b-purple";
+      case "quarterly": return "hk-badge hk-b-blue";
+      case "annually": return "hk-badge hk-b-green";
+      case "one-time": return "hk-badge hk-b-orange";
+      default: return "hk-badge hk-b-gray";
     }
   };
 
@@ -232,278 +217,97 @@ export default function ComplianceCenterPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Compliance Center</h1>
-          <p className="text-muted-foreground">
-            Hong Kong Statutory Compliance Checklist & Monitoring
-          </p>
+    <div className="hk-page">
+      <div className="hk-card">
+        <div className="hk-card-h">
+          <h3>✅ HK Statutory Compliance Center</h3>
+          <span className="hk-badge hk-b-gold">Cap. 622</span>
         </div>
-        <Badge className="bg-blue-100 text-blue-800 text-lg px-4 py-2">
-          Cap. 622 Compliant
-        </Badge>
-      </div>
-
-      <Alert className="bg-blue-50 border-blue-200">
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          <strong>Companies Ordinance (Cap. 622):</strong> Every company incorporated in Hong Kong must have its 
-          financial statements audited by a practising CPA, regardless of size. There is NO audit exemption for 
-          small companies in HK (unlike UK/Singapore). Records must be kept for 7 years.
-        </AlertDescription>
-      </Alert>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              Compliance Score
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-center">
-              <div className="text-5xl font-bold text-blue-700">{complianceScore}%</div>
-              <div className="text-sm text-muted-foreground mt-2">Overall Compliance Rate</div>
-            </div>
-            
-            <Progress value={complianceScore} className="h-2" />
-            
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-700">
-                  {complianceItems.filter(item => item.status === "compliant").length}
-                </div>
-                <div className="text-xs text-muted-foreground">Compliant</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-700">
-                  {overdueItems.length}
-                </div>
-                <div className="text-xs text-muted-foreground">Overdue</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
-              Overdue Items
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {overdueItems.length > 0 ? (
-              <div className="space-y-3">
-                {overdueItems.map(item => (
-                  <div key={item.id} className="p-3 border border-red-200 bg-red-50 rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-semibold">{item.description}</div>
-                        <div className="text-xs text-muted-foreground">{item.authority} • {item.deadline}</div>
-                      </div>
-                      <Badge className="bg-red-100 text-red-800">Overdue</Badge>
-                    </div>
-                    <div className="text-xs text-red-600 mt-2">
-                      Penalty: {item.penalty}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                <div className="text-lg font-semibold text-green-700">No Overdue Items</div>
-                <div className="text-sm text-muted-foreground">All compliance requirements are up to date</div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-600" />
-              Upcoming Deadlines
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {pendingItems.length > 0 ? (
-              <div className="space-y-3">
-                {pendingItems.slice(0, 3).map(item => (
-                  <div key={item.id} className="p-3 border rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-semibold">{item.description}</div>
-                        <div className="text-xs text-muted-foreground">{item.authority}</div>
-                      </div>
-                      <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
-                    </div>
-                    <div className="text-xs text-blue-600 mt-2">
-                      Deadline: {item.deadline}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                <div className="text-lg font-semibold text-green-700">No Pending Deadlines</div>
-                <div className="text-sm text-muted-foreground">All requirements are compliant</div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>HK Statutory Compliance Checklist</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="text-left p-3 text-sm font-semibold">Requirement</th>
-                  <th className="text-left p-3 text-sm font-semibold">Authority</th>
-                  <th className="text-left p-3 text-sm font-semibold">Frequency</th>
-                  <th className="text-left p-3 text-sm font-semibold">Deadline</th>
-                  <th className="text-left p-3 text-sm font-semibold">Status</th>
-                  <th className="text-left p-3 text-sm font-semibold">Penalty</th>
-                </tr>
-              </thead>
-              <tbody>
-                {complianceItems.map(item => (
-                  <tr key={item.id} className="border-t">
-                    <td className="p-3">
-                      <div className="font-medium">{item.description}</div>
-                      <div className="text-xs text-muted-foreground">{item.notes}</div>
-                    </td>
-                    <td className="p-3">
-                      <Badge className="bg-gray-100 text-gray-800">{item.authority}</Badge>
-                    </td>
-                    <td className="p-3">
-                      <Badge className={getFrequencyColor(item.frequency)}>
-                        {item.frequency}
-                      </Badge>
-                    </td>
-                    <td className="p-3 text-sm">{item.deadline}</td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(item.status)}
-                        <Badge className={getStatusColor(item.status)}>
-                          {formatStatusText(item.status)}
-                        </Badge>
-                      </div>
-                    </td>
-                    <td className="p-3 text-sm text-red-600">{item.penalty}</td>
+        <div className="hk-grid hk-g2">
+          <div>
+            <h4 style={{ fontSize: ".85rem", color: "var(--navy)", marginBottom: "12px" }}>📋 Compliance Checklist</h4>
+            <div className="hk-tw">
+              <table className="hk-table">
+                <thead>
+                  <tr>
+                    <th>Requirement</th>
+                    <th>Authority</th>
+                    <th>Frequency</th>
+                    <th>Deadline</th>
+                    <th>Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {complianceItems.map(item => (
+                    <tr key={item.id}>
+                      <td>
+                        <div>{item.description}</div>
+                        <div className="text-xs text-muted-foreground">{item.notes}</div>
+                      </td>
+                      <td>{item.authority}</td>
+                      <td><span className={getFrequencyColor(item.frequency)}>{item.frequency}</span></td>
+                      <td>{item.deadline}</td>
+                      <td><span className={getStatusColor(item.status)}>{formatStatusText(item.status)}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Required Reports (Per Framework)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-semibold mb-2">Full HKFRS</h4>
-                <ul className="text-sm space-y-1">
-                  <li>• Full set of financial statements</li>
-                  <li>• Comprehensive notes to accounts</li>
-                  <li>• Segment reporting</li>
-                  <li>• EPS calculation</li>
-                  <li>• Deferred tax computation</li>
-                </ul>
-              </div>
-
-              <div className="p-4 bg-green-50 rounded-lg">
-                <h4 className="font-semibold mb-2">HKFRS for Private Entities</h4>
-                <ul className="text-sm space-y-1">
-                  <li>• Full set of financial statements</li>
-                  <li>• Simplified notes to accounts</li>
-                  <li>• No segment reporting required</li>
-                  <li>• No EPS calculation required</li>
-                  <li>• Deferred tax computation required</li>
-                </ul>
-              </div>
-
-              <div className="p-4 bg-orange-50 rounded-lg">
-                <h4 className="font-semibold mb-2">SME-FRF & SME-FRS</h4>
-                <ul className="text-sm space-y-1">
-                  <li>• Simplified financial statements</li>
-                  <li>• Minimal notes to accounts</li>
-                  <li>• No cash flow statement required</li>
-                  <li>• No changes in equity required</li>
-                  <li>• No deferred tax computation required</li>
-                </ul>
-              </div>
+          <div>
+            <h4 style={{ fontSize: ".85rem", color: "var(--navy)", marginBottom: "12px" }}>📊 Readiness Score</h4>
+            <div className="hk-stat" style={{ "--c": "var(--blue)" } as React.CSSProperties}>
+              <div className="lb">Compliance Score</div>
+              <div className="vl">{complianceScore}%</div>
+              <div className="sub">{complianceItems.filter(item => item.status === "compliant").length} compliant / {overdueItems.length} overdue</div>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Audit & Record Keeping Requirements</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-semibold mb-2">Auditor Requirements</h4>
-                <ul className="text-sm space-y-1">
-                  <li>• Must be a Certified Public Accountant (CPA) registered with HKICPA</li>
-                  <li>• Must hold a Practising Certificate</li>
-                  <li>• Must be independent of the company</li>
-                  <li>• Appointed at each AGM</li>
-                  <li>• Fees must be disclosed in accounts</li>
-                </ul>
+            <h4 style={{ fontSize: ".85rem", color: "var(--navy)", marginBottom: "12px", marginTop: "20px" }}>📝 Required Reports (Your Framework)</h4>
+            {frameworkRequirements.map((item, index) => (
+              <div key={index} className="hk-chk">
+                <div className={`hk-chk-ico ${item.sme.includes("❌") ? "hk-chk-warn" : "hk-chk-ok"}`}>
+                  {item.sme.includes("❌") ? "!" : "✓"}
+                </div>
+                <div className="hk-chk-text">
+                  <strong>{item.requirement}</strong>
+                  <span>Full: {item.full} | PE: {item.pe} | SME: {item.sme}</span>
+                </div>
               </div>
-
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-semibold mb-2">Record Keeping (s.373-s.374)</h4>
-                <ul className="text-sm space-y-1">
-                  <li>• Proper books of account must be kept</li>
-                  <li>• Records must explain transactions & financial position</li>
-                  <li>• Must enable preparation of financial statements</li>
-                  <li>• Minimum retention: <strong>7 years</strong></li>
-                  <li>• Penalty for non-compliance: up to HK$300,000</li>
-                </ul>
-              </div>
-
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <h4 className="font-semibold mb-2">Key Compliance Dates</h4>
-                <ul className="text-sm space-y-1">
-                  <li>• <strong>1 April:</strong> IR56B submission deadline</li>
-                  <li>• <strong>Within 42 days of AR:</strong> Annual Return (NAR1)</li>
-                  <li>• <strong>Within 9 months of FYE:</strong> Audited accounts</li>
-                  <li>• <strong>10th of each month:</strong> MPF contributions</li>
-                  <li>• <strong>Annually:</strong> Business registration renewal</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <Alert className="bg-green-50 border-green-200">
-        <AlertDescription>
-          <strong>Important:</strong> This compliance center provides monitoring based on HK statutory requirements. 
-          Ensure all deadlines are met and records are maintained for 7 years as required by Cap. 622. 
-          Consult with a qualified professional for specific compliance advice.
-        </AlertDescription>
-      </Alert>
+      <div className="hk-card">
+        <div className="hk-card-h">
+          <h3>🏛 Statutory Audit Requirements</h3>
+        </div>
+        <div className="hk-alert hk-a-info">
+          <strong>Companies Ordinance (Cap. 622) s.405:</strong> Every company incorporated in Hong Kong must have its financial statements audited by a practising CPA, regardless of size. There is no small-company audit exemption in Hong Kong.
+        </div>
+        <div className="hk-grid hk-g2">
+          <div className="hk-notes-box">
+            <h4>Auditor Requirements</h4>
+            <ul>
+              <li>Must be a CPA registered with HKICPA.</li>
+              <li>Must hold a practising certificate.</li>
+              <li>Must be independent of the company.</li>
+              <li>Appointed at each AGM.</li>
+              <li>Fees should be disclosed in the accounts.</li>
+            </ul>
+          </div>
+          <div className="hk-notes-box">
+            <h4>Record Keeping (s.373-s.374)</h4>
+            <ul>
+              <li>Proper books of account must be kept.</li>
+              <li>Records must explain transactions and financial position.</li>
+              <li>Must support preparation of financial statements.</li>
+              <li>Minimum retention: 7 years.</li>
+              <li>Penalty for non-compliance can be up to HK$300,000.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

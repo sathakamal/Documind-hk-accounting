@@ -35,3 +35,12 @@ export function getCurrencySymbol(code: string) {
   };
   return symbols[code] || code;
 }
+
+export function maskHKID(hkid: string): string {
+  if (!hkid) return "-";
+  const match = hkid.match(/^([A-Z])(\d{6})\((\d)\)$/);
+  if (match) {
+    return `${match[1]}******(${match[3]})`;
+  }
+  return "*****";
+}

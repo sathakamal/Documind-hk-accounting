@@ -78,7 +78,7 @@ export async function POST(req: Request) {
       const housing = new Decimal(emp.housingAllowance);
       const gross = basic.plus(housing);
       
-      const mpf = calculateMPF(basic, emp.mpfExempt);
+      const mpf = calculateMPF(gross, emp.mpfExempt);
       const net = gross.minus(mpf.employee);
       const cost = gross.plus(mpf.employer);
 
