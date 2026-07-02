@@ -1,6 +1,5 @@
 import NextAuth, { type AuthOptions, type DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
 
@@ -15,13 +14,6 @@ declare module "next-auth" {
 }
 
 export const authOptions: AuthOptions = {
-  adapter: PrismaAdapter(prisma, {
-    modelMapping: {
-      Account: "UserAccount",
-      Session: "UserSession",
-      VerificationToken: "UserVerificationToken",
-    },
-  }),
   providers: [
     CredentialsProvider({
       name: "Credentials",
